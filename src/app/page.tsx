@@ -245,7 +245,7 @@ function ClosingBand() {
         height={646}
         priority
         sizes="100vw"
-        className="block w-full h-auto"
+        className="block w-full h-[150px] sm:h-[180px] object-cover object-center"
       />
     </footer>
   );
