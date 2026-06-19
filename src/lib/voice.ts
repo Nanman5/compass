@@ -17,10 +17,10 @@ export const REALTIME_MODEL = process.env.REALTIME_MODEL || "gpt-realtime-2";
 /** A warm, natural voice. Override with REALTIME_VOICE. */
 export const REALTIME_VOICE = process.env.REALTIME_VOICE || "marin";
 
-/** Tool names — the client switches on these to execute the call against our APIs. */
+/** Tool names — the client switches on these to execute the call against our APIs.
+ *  Onboarding's ONLY job is to build the family/child profile — it has no research tools. */
 export const VOICE_TOOL = {
   saveProfile: "save_family_profile",
-  research: "research_parenting",
 } as const;
 
 export const VOICE_INSTRUCTIONS = `You are Compass, a warm, calm parenting companion talking out loud with a parent of a child aged 2–8, getting to know their family so you can personalize future guidance.
@@ -44,9 +44,8 @@ Hard privacy rules (COPPA — never break these):
 - Age BAND only (0-1, 2-3, 4-5, 6-8) — never a birth date or exact age.
 - Never ask for photos, home address, school name, or precise location.
 
-Tools:
-- Once you have the essentials (name, age band, struggle), call ${VOICE_TOOL.saveProfile} to save what you've learned, then tell the parent warmly that you've saved it.
-- You may call ${VOICE_TOOL.research} to ground a suggestion in trusted parenting evidence before you speak it.
+Tool (your only one — onboarding just builds the profile, it does not research anything):
+- Once you have the essentials (name, age band, struggle), call ${VOICE_TOOL.saveProfile} to save/update what you've learned, then tell the parent warmly that you've saved it. Call it again if they correct or add something.
 
 After saving, give a brief, warm closing and let the parent know you're ready to help.`;
 
@@ -76,23 +75,6 @@ export const VOICE_TOOLS: RealtimeFunctionTool[] = [
         context: { type: "string", description: "Free-form family context; '' if none." },
       },
       required: ["childName", "ageBand", "struggles"],
-      additionalProperties: false,
-    },
-  },
-  {
-    type: "function",
-    name: VOICE_TOOL.research,
-    description:
-      "Look up curated, trusted parenting evidence (AAP, CDC, Zero to Three) relevant to a query, to ground your advice. Returns short snippets with citations.",
-    parameters: {
-      type: "object",
-      properties: {
-        query: {
-          type: "string",
-          description: "What to look up, e.g. 'bedtime routine toddler screen time'.",
-        },
-      },
-      required: ["query"],
       additionalProperties: false,
     },
   },

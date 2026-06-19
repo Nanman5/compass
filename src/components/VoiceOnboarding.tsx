@@ -26,7 +26,6 @@ import type { ChildProfile } from "@/lib/types";
 
 // Tool names — kept as literals so this client file never imports the server voice module.
 const TOOL_SAVE_PROFILE = "save_family_profile";
-const TOOL_RESEARCH = "research_parenting";
 
 const MARK_COLOR = "/brand/compass-mark-color.png";
 
@@ -46,7 +45,7 @@ interface FunctionCallItem {
 
 /** A live, non-technical view of what the agent is doing right now (a tool in flight). */
 interface ToolActivity {
-  kind: "research" | "save";
+  kind: "save";
   status: "running" | "done";
   detail?: string;
 }
@@ -179,12 +178,6 @@ export default function VoiceOnboarding({
             { kind: "save", status: "done", detail: data?.profile?.childName ?? name },
             2000,
           );
-        } else if (item.name === TOOL_RESEARCH) {
-          showActivity({ kind: "research", status: "running" });
-          const query = typeof args.query === "string" ? args.query : "";
-          const res = await fetch(`/api/evidence?query=${encodeURIComponent(query)}&limit=3`);
-          result = await res.json();
-          showActivity({ kind: "research", status: "done" }, 1600);
         } else {
           result = { error: `unknown tool: ${item.name}` };
         }
@@ -414,9 +407,6 @@ function ToolBadge({ activity, leaving }: { activity: ToolActivity; leaving: boo
 
 /** Plain-language copy — never expose tool names or internals to the parent. */
 function badgeLabel(a: ToolActivity): string {
-  if (a.kind === "research") {
-    return a.status === "running" ? "Looking into trusted guidance…" : "Found trusted guidance";
-  }
   if (a.status === "running") {
     return a.detail ? `Remembering this about ${a.detail}…` : "Remembering this for your family…";
   }

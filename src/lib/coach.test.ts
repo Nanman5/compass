@@ -32,6 +32,12 @@ vi.mock("@/lib/llm", () => ({
   })),
 }));
 
+// research.ts is server-only (throws if imported in the test env) and hits the network;
+// the coach imports it for the find_studies tool, so stub it out here.
+vi.mock("@/lib/research", () => ({
+  searchResearch: vi.fn(async () => []),
+}));
+
 /** Build a scripted LLM: each call to generate() returns the next response in `queue`. */
 function script(...responses: LlmResponse[]): void {
   let i = 0;
