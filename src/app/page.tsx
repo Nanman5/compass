@@ -15,7 +15,6 @@ export default function Home() {
         <Testimonial />
         <ClosingBand />
       </main>
-      <SiteFooter />
     </div>
   );
 }
@@ -215,26 +214,31 @@ function Testimonial() {
           “Compass helps me pause, breathe, and choose what&apos;s best.
           I feel more calm — and my kids do too.”
         </blockquote>
-        <figcaption className="mt-5 text-sm font-semibold text-muted">
-          — Mei, mom of two
+        <figcaption className="mt-7 flex items-center justify-center gap-3">
+          <Image
+            src="/img/testimonial-mei.png"
+            alt="Mei, a Compass beta tester, with her child"
+            width={96}
+            height={96}
+            className="w-12 h-12 rounded-full object-cover border-2 border-cream-card shadow-[var(--shadow-card)]"
+          />
+          <span className="text-left">
+            <span className="block text-sm font-bold text-ink">Mei · mom of two</span>
+            <span className="mt-0.5 inline-flex items-center gap-1.5 rounded-full bg-sage-soft/60 px-2 py-0.5 text-[0.7rem] font-bold uppercase tracking-wide text-teal">
+              <span className="w-1.5 h-1.5 rounded-full bg-coral" /> Compass beta tester
+            </span>
+          </span>
         </figcaption>
       </figure>
     </section>
   );
 }
 
-/* ─────────────────────────────────────────── Closing band */
-const SIGNPOST = ["Understand", "Connect", "Guide", "Grow"];
-
+/* ─────────────────────────────────────────── Closing band + footer (merged) */
 function ClosingBand() {
   return (
-    <section
-      className="relative overflow-hidden"
-      style={{
-        background: "linear-gradient(180deg, #dfe9dd 0%, #cfe0cd 100%)",
-      }}
-    >
-      <div className="mx-auto max-w-6xl px-5 py-16 grid md:grid-cols-2 gap-10 items-center">
+    <footer style={{ background: "linear-gradient(180deg, #e3ecdf 0%, #d3e0cf 100%)" }}>
+      <div className="mx-auto max-w-6xl px-5 pt-14 pb-8 grid md:grid-cols-2 gap-10 items-center">
         <div>
           <h2 className="text-3xl sm:text-4xl font-semibold leading-tight">
             You don&apos;t have to have
@@ -247,39 +251,25 @@ function ClosingBand() {
           <Link href="/app" className="btn btn-primary mt-7">
             Start your journey
           </Link>
-          <p className="mt-3 text-sm text-teal/70">Free to try. Cancel anytime.</p>
+          <p className="mt-3 text-sm text-teal/80">Free to try. Cancel anytime.</p>
         </div>
 
-        {/* signpost */}
-        <div className="relative flex justify-center md:justify-end">
-          <div className="relative">
-            <div className="w-3 h-44 bg-[#a9805c] rounded-full mx-auto" />
-            <div className="absolute top-2 left-1/2 -translate-x-1/2 flex flex-col gap-2.5">
-              {SIGNPOST.map((label, i) => (
-                <div
-                  key={label}
-                  className={`bg-cream-card border border-teal/15 rounded-md px-4 py-1.5 text-sm font-semibold text-teal shadow-sm ${
-                    i % 2 ? "self-end" : "self-start"
-                  }`}
-                >
-                  {label} {i % 2 ? "→" : "←"}
-                </div>
-              ))}
-            </div>
-          </div>
+        {/* illustration shown at its natural 3:2 — no crop, all four signs visible */}
+        <div className="rounded-[1.75rem] overflow-hidden border border-teal/10 shadow-[var(--shadow-soft)]">
+          <Image
+            src="/img/footer-journey.png"
+            alt="A winding path toward a sunrise, with a signpost reading Understand, Connect, Guide, Grow"
+            width={1536}
+            height={1024}
+            className="w-full h-auto"
+          />
         </div>
       </div>
-    </section>
-  );
-}
 
-/* ─────────────────────────────────────────── Footer */
-function SiteFooter() {
-  return (
-    <footer className="bg-cream border-t border-teal/10">
-      <div className="mx-auto max-w-6xl px-5 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+      {/* merged footer row */}
+      <div className="mx-auto max-w-6xl px-5 py-6 border-t border-teal/15 flex flex-col sm:flex-row items-center justify-between gap-3">
         <CompassWordmark size={22} />
-        <p className="text-xs text-muted">
+        <p className="text-xs text-teal/70">
           A parenting companion for the digital age · concept prototype
         </p>
       </div>

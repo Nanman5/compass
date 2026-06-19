@@ -50,6 +50,42 @@ const IMAGES = {
       "A small seedling sprouting two leaves growing from warm soil in a little pot, hopeful and gentle. " +
       STYLE,
   },
+  // Testimonial — REALISTIC camera-roll photo (Realistic AI Image Guide, format C).
+  "testimonial-mei": {
+    size: "1024x1024",
+    quality: "medium",
+    prompt:
+      "subject: Mei, a warm Asian-American mom in her early 30s, natural skin texture with visible pores, " +
+      "a few flyaway hairs, tired-but-happy genuine half-smile, no makeup\n" +
+      "scene: her lived-in living room at home on an ordinary afternoon\n" +
+      "action: sitting on the couch mid-laugh, one arm around her small kid who is leaning into her\n" +
+      "environment: messy real living room, kids' toys on the floor, a bunched-up throw blanket, a coffee " +
+      "mug on the side table, a charger cable, a couple of board books, a houseplant in the corner\n" +
+      "wardrobe/props: casual oversized oatmeal knit sweater, small stud earrings, hair in a loose messy bun\n" +
+      "camera style: candid iPhone photo taken by a friend\n" +
+      "photo quality and vibe: non-studio lighting, warm daylight through a window, imperfect phone quality, " +
+      "slight compression noise, imperfect focus, natural skin texture, raw casual camera-roll snapshot\n" +
+      "composition: slightly awkward framing, subject off-center, slight tilt, a cushion partly blocking one " +
+      "corner, casual unposed snapshot\n" +
+      "aspect ratio: 1:1\n" +
+      "Avoid: studio lighting, flawless skin, airbrushed face, glossy AI look, oversharpening, perfect " +
+      "symmetry, editorial pose, fake bokeh, perfect hands, extra fingers, distorted hands, excessive yellow.",
+  },
+  // Footer scene — this one DELIBERATELY includes lettering on the signpost.
+  "footer-journey": {
+    size: "1536x1024",
+    prompt:
+      "A wide, peaceful landscape at soft golden sunrise: gentle rolling green hills, leafy plants " +
+      "and tiny wildflowers in the foreground, a winding dirt path leading toward a warm glowing rising " +
+      "sun on the horizon. On the right side of the path stands a charming wooden directional signpost: " +
+      "a single wooden post with four small rounded cream-colored sign boards mounted on it, one above " +
+      "another. Each board shows exactly one clearly legible word in clean dark-teal hand-lettered serif " +
+      "text. From top to bottom the four words are: \"Understand\", \"Connect\", \"Guide\", \"Grow\". " +
+      "Spell each word correctly. Hopeful, calm, inviting, storybook mood. " +
+      "Warm, gentle hand-drawn editorial storybook illustration with soft paper texture. " +
+      "Calming earthy palette: sage greens (#8fb09a), cream (#fbf7f0), terracotta-coral (#e1785c), " +
+      "deep teal (#1e4d4a), warm gold sun (#e6b566). No other text anywhere except those four signpost words.",
+  },
 };
 
 async function gen(name, spec) {
@@ -61,7 +97,7 @@ async function gen(name, spec) {
       model: MODEL,
       prompt: spec.prompt,
       size: spec.size,
-      quality: "high",
+      quality: spec.quality ?? "high",
       n: 1,
     }),
   });
