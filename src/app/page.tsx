@@ -237,39 +237,47 @@ function Testimonial() {
 /* ─────────────────────────────────────────── Closing band + footer (merged) */
 function ClosingBand() {
   return (
-    <footer style={{ background: "linear-gradient(180deg, #e3ecdf 0%, #d3e0cf 100%)" }}>
-      <div className="mx-auto max-w-6xl px-5 pt-14 pb-8 grid md:grid-cols-2 gap-10 items-center">
-        <div>
-          <h2 className="text-3xl sm:text-4xl font-semibold leading-tight">
+    <footer className="relative isolate min-h-[560px] flex flex-col">
+      {/* full-bleed illustrated landscape — covers the whole footer */}
+      <Image
+        src="/img/footer-journey.png"
+        alt="A winding path toward a sunrise, with a signpost reading Understand, Connect, Guide, Grow"
+        fill
+        priority
+        sizes="100vw"
+        className="object-cover object-center -z-10"
+      />
+      {/* legibility wash on the left so the dark text reads over the sky */}
+      <div
+        className="absolute inset-0 -z-10"
+        style={{
+          background:
+            "linear-gradient(90deg, rgba(251,247,240,0.85) 0%, rgba(251,247,240,0.55) 30%, rgba(251,247,240,0) 58%)",
+        }}
+      />
+
+      {/* headline + CTA, overlaid on the open left side */}
+      <div className="flex-1 mx-auto w-full max-w-6xl px-5 pt-16 pb-10 flex items-center">
+        <div className="max-w-md">
+          <h2 className="text-3xl sm:text-4xl font-semibold leading-tight drop-shadow-[0_1px_0_rgba(251,247,240,0.6)]">
             You don&apos;t have to have
             <br />
             all the answers.
           </h2>
-          <p className="mt-2 text-2xl text-coral" style={{ fontFamily: "var(--font-display)" }}>
+          <p className="mt-2 text-2xl text-coral-deep" style={{ fontFamily: "var(--font-display)" }}>
             We&apos;ll walk with you.
           </p>
           <Link href="/app" className="btn btn-primary mt-7">
             Start your journey
           </Link>
-          <p className="mt-3 text-sm text-teal/80">Free to try. Cancel anytime.</p>
-        </div>
-
-        {/* illustration shown at its natural 3:2 — no crop, all four signs visible */}
-        <div className="rounded-[1.75rem] overflow-hidden border border-teal/10 shadow-[var(--shadow-soft)]">
-          <Image
-            src="/img/footer-journey.png"
-            alt="A winding path toward a sunrise, with a signpost reading Understand, Connect, Guide, Grow"
-            width={1536}
-            height={1024}
-            className="w-full h-auto"
-          />
+          <p className="mt-3 text-sm font-semibold text-teal">Free to try. Cancel anytime.</p>
         </div>
       </div>
 
-      {/* merged footer row */}
-      <div className="mx-auto max-w-6xl px-5 py-6 border-t border-teal/15 flex flex-col sm:flex-row items-center justify-between gap-3">
+      {/* merged footer row, sitting at the bottom over the illustration */}
+      <div className="mx-auto w-full max-w-6xl px-5 py-5 flex flex-col sm:flex-row items-center justify-between gap-2 border-t border-teal/15 bg-cream/55 backdrop-blur-[2px]">
         <CompassWordmark size={22} />
-        <p className="text-xs text-teal/70">
+        <p className="text-xs font-medium text-teal/80">
           A parenting companion for the digital age · concept prototype
         </p>
       </div>
