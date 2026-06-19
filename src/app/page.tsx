@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { CompassStar, CompassWordmark } from "@/components/CompassStar";
+import { CompassWordmark } from "@/components/CompassStar";
 import { Icon, type IconName } from "@/components/Icon";
 
 const NAV = ["Features", "How it works", "For families", "Pricing", "Resources"];
@@ -359,105 +359,31 @@ function PasteSection() {
 
 function PasteCard() {
   return (
-    <div className="relative">
-      {/* hand-drawn stars peeking out from behind the card corners */}
-      {/* eslint-disable @next/next/no-img-element */}
-      <img src="/decor/star.svg" width={82} height={80} alt="" aria-hidden className="absolute -top-3 -right-2 w-7 h-auto opacity-80" />
-      <img src="/decor/star.svg" width={82} height={80} alt="" aria-hidden className="absolute -bottom-3 -left-2 w-5 h-auto opacity-60" />
-      {/* eslint-enable @next/next/no-img-element */}
-
-      <div className="relative rounded-[1.6rem] bg-cream-card border border-teal/10 p-5 sm:p-6 shadow-[var(--shadow-soft)]">
-        {/* the "pasted" attachment row */}
-        <div className="flex items-center gap-3 rounded-xl border border-teal/10 bg-cream-deep/40 px-4 py-3">
-          <span className="w-9 h-9 rounded-lg grid place-items-center bg-coral/10 text-coral">
-            <Icon name="note" size={18} />
-          </span>
-          <span className="text-sm">
-            <span className="block font-semibold text-ink">reel_screenshot.png</span>
-            <span className="block text-muted">Pasted from Instagram</span>
-          </span>
-        </div>
-
-        <p className="mt-3 text-center text-sm text-muted italic">Compass is reading…</p>
-
-        {/* Compass's reply: the one next step */}
-        <div className="mt-3 rounded-xl bg-gold/10 border border-gold/30 p-4">
-          <p className="flex items-center gap-2 text-[0.7rem] font-bold uppercase tracking-wide text-gold">
-            <CompassStar size={14} /> Your next step for Maya, age 4
-          </p>
-          <p className="mt-2 text-ink leading-snug" style={{ fontFamily: "var(--font-display)" }}>
-            &ldquo;Try a 2-minute &lsquo;feelings check-in&rsquo; before screen time ends — name
-            the feeling, then count down together.&rdquo;
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <button className="btn btn-primary text-sm px-4 py-2">Add to today</button>
-            <button className="btn btn-ghost text-sm px-4 py-2">Why this works</button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <Image
+      src="/img/feature-paste.png"
+      alt="Compass reading a pasted Instagram screenshot and handing back one concrete next step for Maya, age 4: a 2-minute feelings check-in before screen time ends."
+      width={1536}
+      height={1024}
+      className="h-auto w-full"
+    />
   );
 }
 
 /* ─────────────────────────────────────────── Weekly drop
 
-   A "This week for <child>" card on the left; descriptive copy on the right. */
-const WEEKLY_ITEMS: { icon: IconName; tint: string; ink: string; kind: string; text: string }[] = [
-  {
-    icon: "book",
-    tint: "#d7e6da",
-    ink: "#2f6360",
-    kind: "Study",
-    text: "How shared reading at 4 builds emotional vocabulary",
-  },
-  {
-    icon: "bulb",
-    tint: "#f6dcd2",
-    ink: "#cf6147",
-    kind: "Tip",
-    text: "A calmer bedtime wind-down for big-feeling days",
-  },
-  {
-    icon: "shield",
-    tint: "#f6e7c4",
-    ink: "#c08a36",
-    kind: "Activity",
-    text: "15-minute kitchen science she'll love this weekend",
-  },
-];
-
+   A generated "This week for <child>" card on the left; descriptive copy on the right. */
 function WeeklyDrop() {
   return (
     <section className="py-16 sm:py-24 bg-cream-deep/60 border-y border-teal/10">
       <div className="mx-auto max-w-6xl px-5 grid lg:grid-cols-2 gap-12 items-center">
         {/* the weekly-feed card */}
-        <div className="rounded-[1.6rem] bg-cream-card border border-teal/10 p-6 shadow-[var(--shadow-soft)]">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xl font-semibold">This week for Maya</h3>
-            <span className="text-sm text-muted">June 16</span>
-          </div>
-          <ul className="mt-5 space-y-3">
-            {WEEKLY_ITEMS.map((it) => (
-              <li
-                key={it.kind}
-                className="flex items-center gap-4 rounded-xl bg-cream-deep/40 border border-teal/10 px-4 py-3"
-              >
-                <span
-                  className="w-10 h-10 shrink-0 rounded-xl grid place-items-center"
-                  style={{ background: it.tint, color: it.ink }}
-                >
-                  <Icon name={it.icon} size={20} />
-                </span>
-                <span>
-                  <span className="block text-[0.7rem] font-bold uppercase tracking-wide" style={{ color: it.ink }}>
-                    {it.kind}
-                  </span>
-                  <span className="block text-sm text-ink/85 leading-snug">{it.text}</span>
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <Image
+          src="/img/feature-weekly.png"
+          alt="Compass's weekly drop for Maya — a study, a tip, and an activity matched to her this week."
+          width={1536}
+          height={1024}
+          className="h-auto w-full"
+        />
 
         <div>
           <p className="eyebrow text-sage">Weekly drop</p>
@@ -495,33 +421,14 @@ function VoiceCoach() {
           </p>
         </div>
 
-        {/* the voice moment, on a deep-teal surface */}
-        <div className="relative rounded-[1.6rem] p-7 sm:p-8 text-cream shadow-[var(--shadow-soft)] bg-teal overflow-hidden">
-          {/* soft brand orbs in the corner for warmth */}
-          <div aria-hidden className="absolute -top-6 -right-6 w-28 h-28 rounded-full bg-sage/30 blur-2xl" />
-
-          <div className="relative flex justify-center">
-            <span className="w-14 h-14 rounded-full bg-coral grid place-items-center text-cream shadow-[0_10px_24px_-10px_rgba(225,120,92,0.9)]">
-              <Icon name="mic" size={24} />
-            </span>
-          </div>
-
-          {/* a little audio-bars flourish */}
-          <div className="relative mt-5 flex items-end justify-center gap-1 h-6" aria-hidden>
-            {[10, 18, 24, 14, 20, 8].map((h, i) => (
-              <span key={i} className="w-1 rounded-full bg-gold" style={{ height: h }} />
-            ))}
-          </div>
-
-          <p className="relative mt-5 text-center text-lg leading-snug" style={{ fontFamily: "var(--font-display)" }}>
-            &ldquo;He won&apos;t put the tablet down and dinner&apos;s burning&rdquo;
-          </p>
-          <p className="relative mt-4 text-sm text-cream/80 leading-relaxed text-center max-w-sm mx-auto">
-            <span className="font-semibold text-cream">Compass:</span> Let&apos;s do a 3-2-1
-            handoff — I&apos;ll set a 2-minute timer and queue his dinosaur song to walk over to
-            the table.
-          </p>
-        </div>
+        {/* the voice moment */}
+        <Image
+          src="/img/feature-voice.png"
+          alt="The Help Me Now voice coach: a parent says 'he won't put the tablet down and dinner's burning' and Compass offers a calm 3-2-1 handoff."
+          width={1536}
+          height={1024}
+          className="h-auto w-full"
+        />
       </div>
     </section>
   );
@@ -529,9 +436,27 @@ function VoiceCoach() {
 
 /* ─────────────────────────────────────────── Why now (stats + testimonial) */
 const STATS = [
-  { value: "1st", color: "#e1785c", body: "update to AAP screen-time guidance in over a decade." },
-  { value: "~50%", color: "#8fb09a", body: "of parents report using screens to manage difficult behavior." },
-  { value: "2–8", color: "#2f6360", body: "the ages where intentional habits take root — and Compass focuses." },
+  {
+    value: "1st",
+    label: "in a decade",
+    color: "#e1785c",
+    tint: "rgba(225,120,92,0.12)",
+    body: "update to AAP screen-time guidance — away from rigid limits, toward quality and context.",
+  },
+  {
+    value: "~50%",
+    label: "of parents",
+    color: "#6f9a7c",
+    tint: "rgba(143,176,154,0.18)",
+    body: "reach for screens to manage difficult behavior — usually without a plan.",
+  },
+  {
+    value: "2–8",
+    label: "the window",
+    color: "#2f6360",
+    tint: "rgba(47,99,96,0.12)",
+    body: "the ages where intentional habits take root — exactly where Compass focuses.",
+  },
 ];
 
 function WhyNow() {
@@ -549,13 +474,32 @@ function WhyNow() {
           context-aware guidance for your specific child.
         </p>
 
-        <div className="mt-10 grid sm:grid-cols-3 gap-5">
+        <div className="mt-12 grid gap-5 sm:grid-cols-3">
           {STATS.map((s) => (
-            <div key={s.value} className="rounded-[1.3rem] bg-cream-card border border-teal/10 p-6 shadow-[var(--shadow-card)]">
-              <p className="text-4xl font-semibold" style={{ fontFamily: "var(--font-display)", color: s.color }}>
+            <div
+              key={s.value}
+              className="group relative overflow-hidden rounded-[1.4rem] border border-teal/10 bg-cream-card p-7 shadow-[var(--shadow-card)] transition duration-300 hover:-translate-y-1 hover:shadow-[var(--shadow-soft)]"
+            >
+              {/* colored top accent + a soft glow in the corner for depth */}
+              <span aria-hidden className="absolute inset-x-0 top-0 h-1.5" style={{ background: s.color }} />
+              <span
+                aria-hidden
+                className="absolute -right-10 -top-10 h-28 w-28 rounded-full blur-2xl transition-opacity duration-300 group-hover:opacity-100"
+                style={{ background: s.tint, opacity: 0.85 }}
+              />
+              <p
+                className="relative text-5xl font-semibold leading-none"
+                style={{ fontFamily: "var(--font-display)", color: s.color }}
+              >
                 {s.value}
               </p>
-              <p className="mt-3 text-sm text-ink/70 leading-relaxed">{s.body}</p>
+              <p
+                className="relative mt-2 text-[0.7rem] font-bold uppercase tracking-[0.14em]"
+                style={{ color: s.color }}
+              >
+                {s.label}
+              </p>
+              <p className="relative mt-3 text-sm leading-relaxed text-ink/70">{s.body}</p>
             </div>
           ))}
         </div>
