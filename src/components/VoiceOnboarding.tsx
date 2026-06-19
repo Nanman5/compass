@@ -266,7 +266,7 @@ export default function VoiceOnboarding({
   }, [muted]);
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden bg-cream">
+    <div className="absolute inset-0 z-50 overflow-hidden bg-cream">
       <div className="aurora" aria-hidden="true">
         <div className="blob blob-coral" />
         <div className="blob blob-teal" />

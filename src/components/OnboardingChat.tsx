@@ -109,14 +109,33 @@ export default function OnboardingChat() {
     }
   }, [pushMessage]);
 
+  // Lock the page to a definite full-height, no-scroll shell while /app is mounted.
+  // This makes `h-full` resolve in Safari (a `min-h-full` body is an INDEFINITE height,
+  // so percentage/auto heights collapse there) and keeps the document from scrolling —
+  // the message pane does its own scrolling. Restored on unmount so the landing is fine.
+  useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+    const prev = { htmlH: html.style.height, bodyH: body.style.height, bodyO: body.style.overflow };
+    html.style.height = "100%";
+    body.style.height = "100%";
+    body.style.overflow = "hidden";
+    return () => {
+      html.style.height = prev.htmlH;
+      body.style.height = prev.bodyH;
+      body.style.overflow = prev.bodyO;
+    };
+  }, []);
+
   // Kick off the conversation exactly once (guard against React StrictMode double-invoke,
   // which otherwise fires two kickoffs → two greeting bubbles).
   useEffect(() => {
     if (didInit.current) return;
     didInit.current = true;
     familyId.current = getFamilyId();
+    const params = new URLSearchParams(window.location.search);
     // Deep-link: /app?voice=1 opens straight into the spoken onboarding.
-    if (new URLSearchParams(window.location.search).get("voice") === "1") {
+    if (params.get("voice") === "1") {
       setVoiceOpen(true);
     }
     (async () => {
@@ -168,7 +187,7 @@ export default function OnboardingChat() {
   };
 
   return (
-    <div className="fixed inset-0 overflow-hidden bg-cream">
+    <div className="relative h-full w-full overflow-hidden bg-cream">
       {/* living ambient backdrop */}
       <div className="aurora" aria-hidden="true">
         <div className="blob blob-coral" />
@@ -177,36 +196,44 @@ export default function OnboardingChat() {
         <div className="blob blob-rose" />
       </div>
 
-      <div className="relative z-10 mx-auto flex h-full max-w-2xl flex-col px-4 sm:px-6">
-        <Presence thinking={pending} done={done} />
+      {/* Full-width column so the scrollbar sits at the window's right edge; each
+          section centers its own content to max-w-2xl. */}
+      <div className="relative z-10 flex h-full w-full flex-col">
+        <div className="mx-auto w-full max-w-2xl shrink-0 px-4 sm:px-6">
+          <Presence thinking={pending} done={done} />
+        </div>
 
         <main
           ref={scrollRef}
-          className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain scroll-smooth pb-6 pt-1"
+          className="min-h-0 flex-1 overflow-y-auto overscroll-contain scroll-smooth"
           aria-live="polite"
         >
-          {messages.map((m) =>
-            m.role === "assistant" ? (
-              <AssistantBubble key={m.id} text={m.text} />
-            ) : (
-              <UserBubble key={m.id} text={m.text} />
-            ),
-          )}
+          <div className="mx-auto w-full max-w-2xl space-y-4 px-4 pb-6 pt-1 sm:px-6">
+            {messages.map((m) =>
+              m.role === "assistant" ? (
+                <AssistantBubble key={m.id} text={m.text} />
+              ) : (
+                <UserBubble key={m.id} text={m.text} />
+              ),
+            )}
 
-          {pending && <TypingBubble />}
-          {error && <ErrorBubble text={error} onRetry={() => void send()} />}
-          {done && profile && <Recap profile={profile} />}
+            {pending && <TypingBubble />}
+            {error && <ErrorBubble text={error} onRetry={() => void send()} />}
+            {done && profile && <Recap profile={profile} />}
+          </div>
         </main>
 
         {!done && (
-          <Composer
-            value={input}
-            disabled={pending}
-            onChange={setInput}
-            onKeyDown={onKeyDown}
-            onSend={() => void send()}
-            onVoice={() => setVoiceOpen(true)}
-          />
+          <div className="mx-auto w-full max-w-2xl shrink-0 px-4 sm:px-6">
+            <Composer
+              value={input}
+              disabled={pending}
+              onChange={setInput}
+              onKeyDown={onKeyDown}
+              onSend={() => void send()}
+              onVoice={() => setVoiceOpen(true)}
+            />
+          </div>
         )}
       </div>
 
