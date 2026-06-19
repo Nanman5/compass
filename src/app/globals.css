@@ -1,0 +1,100 @@
+@import "tailwindcss";
+
+/* ── Compass design tokens ─────────────────────────────────────────────
+   Warm, gentle, illustrated. Cream + deep teal + coral, per concept brief. */
+@theme {
+  --color-cream: #fbf7f0;
+  --color-cream-deep: #f3ecdf;
+  --color-cream-card: #fdfbf6;
+  --color-teal: #1e4d4a;
+  --color-teal-soft: #2f6360;
+  --color-coral: #e1785c;
+  --color-coral-deep: #cf6147;
+  --color-sage: #8fb09a;
+  --color-sage-soft: #c7dac9;
+  --color-gold: #e6b566;
+  --color-ink: #3e3a34;
+  --color-muted: #837a6e;
+
+  --font-display: var(--font-fraunces), Georgia, serif;
+  --font-body: var(--font-nunito), system-ui, sans-serif;
+
+  --shadow-soft: 0 18px 40px -24px rgba(30, 77, 74, 0.35);
+  --shadow-card: 0 10px 30px -18px rgba(62, 58, 52, 0.25);
+}
+
+:root {
+  --background: var(--color-cream);
+  --foreground: var(--color-ink);
+}
+
+* {
+  border-color: rgba(30, 77, 74, 0.12);
+}
+
+body {
+  background: var(--color-cream);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  color: var(--color-teal);
+  letter-spacing: -0.01em;
+}
+
+::selection {
+  background: var(--color-coral);
+  color: #fff;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  border-radius: 9999px;
+  padding: 0.85rem 1.6rem;
+  font-size: 0.98rem;
+  transition: transform 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+  cursor: pointer;
+  border: none;
+}
+.btn-primary {
+  background: var(--color-coral);
+  color: #fff;
+  box-shadow: 0 12px 26px -14px rgba(225, 120, 92, 0.9);
+}
+.btn-primary:hover {
+  background: var(--color-coral-deep);
+  transform: translateY(-1px);
+}
+.btn-ghost {
+  background: transparent;
+  color: var(--color-teal);
+  border: 1.5px solid rgba(30, 77, 74, 0.25);
+}
+.btn-ghost:hover {
+  border-color: var(--color-teal);
+  background: rgba(30, 77, 74, 0.04);
+}
+
+.eyebrow {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-coral);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
