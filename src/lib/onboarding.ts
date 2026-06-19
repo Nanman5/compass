@@ -33,7 +33,7 @@ const AGE_BANDS: readonly AgeBand[] = ["0-1", "2-3", "4-5", "6-8"];
  * applied when Gemini is the active provider — if we fell back to OpenAI, a Gemini model
  * id would be invalid, so we let the OpenAI client use its own default.
  */
-const ONBOARDING_GEMINI_MODEL = process.env.ONBOARDING_GEMINI_MODEL || "gemini-3.1-flash-lite";
+const ONBOARDING_GEMINI_MODEL = process.env.ONBOARDING_GEMINI_MODEL || "gemini-3.5-flash";
 function onboardingModel(llm: LlmClient): string | undefined {
   return llm.provider === "gemini" ? ONBOARDING_GEMINI_MODEL : undefined;
 }
@@ -49,7 +49,9 @@ This is a conversation, not a form. There is NO fixed script and no required ord
 
 What you're trying to learn (these are GOALS, not a checklist to recite):
 - ESSENTIAL — you need these before finishing: the child's first name or nickname; their age band; and the main struggle the parent wants help with right now.
-- HELPFUL — gather only if it comes up naturally, never insist: their temperament (how they handle transitions, how sensitive or persistent they are); their interests / what pulls them to a screen; which everyday routine screens crowd out most (sleep, meals, play, time together); whether screens are the go-to for calming or sleep; and any family context they volunteer (languages, household, values, constraints).
+- HELPFUL — gather only if it comes up naturally, never insist: their temperament (how they handle transitions, how sensitive or persistent they are); their interests; and any family context they volunteer (languages, household, values, constraints).
+
+About the struggle (important): it can be ANYTHING in parenting — sleep, tantrums, eating, transitions, siblings, big feelings, screens, whatever they bring. Capture it in the parent's OWN words and reflect THAT back. Do NOT assume or reframe it as a "screen-time" problem — only talk about screens if the parent does. (Compass supports the whole of parenting; intentional tech use is one part of that, not the lens for everything.)
 
 How to ask:
 - One thing at a time, 1–2 sentences, gentle and human — not clinical. Acknowledge what they just said before moving on.
