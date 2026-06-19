@@ -561,18 +561,21 @@ function SiteFooter() {
               A parenting companion for the digital age. Technology with intention.
             </p>
           </div>
-          {FOOTER_COLS.map((col) => (
-            <div key={col.heading}>
-              <p className="text-[0.7rem] font-bold uppercase tracking-wide text-teal/70">{col.heading}</p>
-              <ul className="mt-4 space-y-2.5 text-sm text-ink/70">
-                {col.links.map((l) => (
-                  <li key={l} className="hover:text-teal transition-colors cursor-pointer">
-                    {l}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+          {/* link groups: 2-up on phones, 3-up on small tablets, inline on desktop */}
+          <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 md:contents">
+            {FOOTER_COLS.map((col) => (
+              <div key={col.heading}>
+                <p className="text-[0.7rem] font-bold uppercase tracking-wide text-teal/70">{col.heading}</p>
+                <ul className="mt-4 space-y-2.5 text-sm text-ink/70">
+                  {col.links.map((l) => (
+                    <li key={l} className="hover:text-teal transition-colors cursor-pointer">
+                      {l}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className="mt-12 pt-6 border-t border-teal/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-sm text-muted">
