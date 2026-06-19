@@ -80,7 +80,7 @@ function getFamilyId(): string {
   return id;
 }
 
-export default function OnboardingChat() {
+export default function OnboardingChat({ familyId: familyIdProp }: { familyId?: string } = {}) {
   const [messages, setMessages] = useState<VisibleMessage[]>([]);
   const [pending, setPending] = useState(true); // true during the opening kickoff
   const [done, setDone] = useState(false);
@@ -156,7 +156,8 @@ export default function OnboardingChat() {
   useEffect(() => {
     if (didInit.current) return;
     didInit.current = true;
-    familyId.current = getFamilyId();
+    // Signed-in users get a per-account familyId; guests fall back to a local demo id.
+    familyId.current = familyIdProp ?? getFamilyId();
     const params = new URLSearchParams(window.location.search);
     // Deep-link: /app?voice=1 opens straight into the spoken onboarding.
     if (params.get("voice") === "1") {

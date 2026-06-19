@@ -7,12 +7,12 @@
  * because the whole experience is interactive and stateful.
  */
 
-import OnboardingChat from "@/components/OnboardingChat";
+import AppGate from "@/components/AppGate";
 
 export const metadata = {
   title: "Compass — Let's get to know your family",
 };
 
 export default function AppPage() {
-  return <OnboardingChat />;
+  return <AppGate />;
 }
