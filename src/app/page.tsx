@@ -237,49 +237,73 @@ function Testimonial() {
 /* ─────────────────────────────────────────── Closing band + footer (merged) */
 function ClosingBand() {
   return (
-    <footer className="relative isolate min-h-[560px] flex flex-col">
-      {/* full-bleed illustrated landscape — covers the whole footer */}
+    <footer className="relative w-full bg-cream">
+      {/* full-bleed banner — edges touch the page edges, shown whole (no crop) */}
       <Image
         src="/img/footer-journey.png"
         alt="A winding path toward a sunrise, with a signpost reading Understand, Connect, Guide, Grow"
-        fill
+        width={2172}
+        height={646}
         priority
         sizes="100vw"
-        className="object-cover object-center -z-10"
+        className="block w-full h-auto"
       />
-      {/* legibility wash on the left so the dark text reads over the sky */}
+
+      {/* DESKTOP: soft cream wash on the left so the dark text reads over the scenery */}
       <div
-        className="absolute inset-0 -z-10"
+        className="hidden md:block absolute inset-0 pointer-events-none"
         style={{
           background:
-            "linear-gradient(90deg, rgba(251,247,240,0.85) 0%, rgba(251,247,240,0.55) 30%, rgba(251,247,240,0) 58%)",
+            "linear-gradient(90deg, rgba(251,247,240,0.92) 0%, rgba(251,247,240,0.6) 26%, rgba(251,247,240,0) 50%)",
         }}
       />
 
-      {/* headline + CTA, overlaid on the open left side */}
-      <div className="flex-1 mx-auto w-full max-w-6xl px-5 pt-16 pb-10 flex items-center">
-        <div className="max-w-md">
-          <h2 className="text-3xl sm:text-4xl font-semibold leading-tight drop-shadow-[0_1px_0_rgba(251,247,240,0.6)]">
-            You don&apos;t have to have
-            <br />
-            all the answers.
-          </h2>
-          <p className="mt-2 text-2xl text-coral-deep" style={{ fontFamily: "var(--font-display)" }}>
-            We&apos;ll walk with you.
-          </p>
-          <Link href="/app" className="btn btn-primary mt-7">
-            Start your journey
-          </Link>
-          <p className="mt-3 text-sm font-semibold text-teal">Free to try. Cancel anytime.</p>
+      {/* DESKTOP: headline + CTA overlaid on the open left side of the banner */}
+      <div className="hidden md:flex absolute inset-0 items-center">
+        <div className="mx-auto w-full max-w-6xl px-5">
+          <div className="max-w-md">
+            <h2 className="text-3xl lg:text-4xl font-semibold leading-tight">
+              You don&apos;t have to have
+              <br />
+              all the answers.
+            </h2>
+            <p className="mt-2 text-2xl text-coral-deep" style={{ fontFamily: "var(--font-display)" }}>
+              We&apos;ll walk with you.
+            </p>
+            <Link href="/app" className="btn btn-primary mt-6">
+              Start your journey
+            </Link>
+            <p className="mt-3 text-sm font-semibold text-teal">Free to try. Cancel anytime.</p>
+          </div>
         </div>
       </div>
 
-      {/* merged footer row, sitting at the bottom over the illustration */}
-      <div className="mx-auto w-full max-w-6xl px-5 py-5 flex flex-col sm:flex-row items-center justify-between gap-2 border-t border-teal/15 bg-cream/55 backdrop-blur-[2px]">
-        <CompassWordmark size={22} />
-        <p className="text-xs font-medium text-teal/80">
-          A parenting companion for the digital age · concept prototype
+      {/* DESKTOP: footer row pinned to the bottom of the banner */}
+      <div className="hidden md:block absolute bottom-0 inset-x-0">
+        <div className="mx-auto w-full max-w-6xl px-5 py-3.5 flex items-center justify-between border-t border-teal/15 bg-cream/55 backdrop-blur-[2px]">
+          <CompassWordmark size={22} />
+          <p className="text-xs font-medium text-teal/80">
+            A parenting companion for the digital age · concept prototype
+          </p>
+        </div>
+      </div>
+
+      {/* MOBILE: banner is too short to overlay — stack the text below it */}
+      <div className="md:hidden px-5 py-9" style={{ background: "linear-gradient(180deg,#e3ecdf,#d3e0cf)" }}>
+        <h2 className="text-3xl font-semibold leading-tight">
+          You don&apos;t have to have all the answers.
+        </h2>
+        <p className="mt-2 text-2xl text-coral-deep" style={{ fontFamily: "var(--font-display)" }}>
+          We&apos;ll walk with you.
         </p>
+        <Link href="/app" className="btn btn-primary mt-6">
+          Start your journey
+        </Link>
+        <p className="mt-3 text-sm font-semibold text-teal">Free to try. Cancel anytime.</p>
+        <div className="mt-8 pt-5 border-t border-teal/15 flex items-center justify-between">
+          <CompassWordmark size={20} />
+          <p className="text-[0.7rem] font-medium text-teal/80">Concept prototype</p>
+        </div>
       </div>
     </footer>
   );
