@@ -17,6 +17,7 @@
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import VoiceOnboarding from "@/components/VoiceOnboarding";
 import type { ChildProfile, OnboardingState } from "@/lib/types";
 
 /** The real Compass mark — full color for the header, monochrome teal for inline avatars. */
@@ -71,6 +72,7 @@ export default function OnboardingChat() {
   const [profile, setProfile] = useState<ChildProfile | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [input, setInput] = useState("");
+  const [voiceOpen, setVoiceOpen] = useState(false);
 
   const familyId = useRef<string>("");
   const serverState = useRef<OnboardingState | null>(null);
@@ -110,6 +112,10 @@ export default function OnboardingChat() {
   useEffect(() => {
     let cancelled = false;
     familyId.current = getFamilyId();
+    // Deep-link: /app?voice=1 opens straight into the spoken onboarding.
+    if (new URLSearchParams(window.location.search).get("voice") === "1") {
+      setVoiceOpen(true);
+    }
     (async () => {
       try {
         const data = await turn(KICKOFF);
@@ -194,9 +200,21 @@ export default function OnboardingChat() {
             onChange={setInput}
             onKeyDown={onKeyDown}
             onSend={() => void send()}
+            onVoice={() => setVoiceOpen(true)}
           />
         )}
       </div>
+
+      {voiceOpen && (
+        <VoiceOnboarding
+          familyId={familyId.current}
+          onClose={() => setVoiceOpen(false)}
+          onProfileSaved={(p) => {
+            setProfile(p);
+            setDone(true);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -294,12 +312,14 @@ function Composer({
   onChange,
   onKeyDown,
   onSend,
+  onVoice,
 }: {
   value: string;
   disabled: boolean;
   onChange: (v: string) => void;
   onKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   onSend: () => void;
+  onVoice: () => void;
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -314,7 +334,18 @@ function Composer({
 
   return (
     <div className="shrink-0 pb-5 pt-2">
-      <div className="composer glass flex items-end gap-2 rounded-[1.6rem] p-2 pl-5">
+      <div className="composer glass flex items-end gap-2 rounded-[1.6rem] p-2 pl-2">
+        <button
+          onClick={onVoice}
+          aria-label="Talk to Compass instead"
+          title="Talk to Compass"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-teal/80 transition hover:bg-teal/8 hover:text-teal active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <rect x="9" y="3" width="6" height="11" rx="3" stroke="currentColor" strokeWidth="2" />
+            <path d="M5 11a7 7 0 0 0 14 0M12 18v3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+        </button>
         <label htmlFor="reply" className="sr-only">
           Your reply
         </label>

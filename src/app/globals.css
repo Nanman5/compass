@@ -211,6 +211,35 @@ h1, h2, h3, h4 {
 .compass-breathe { animation: breathe 4.5s ease-in-out infinite; }
 .compass-thinking { animation: glow-pulse 1.6s ease-in-out infinite; }
 
+/* Voice mode: a calm, breathing presence. Concentric rings softly pulse on their own
+   (peaceful idle), while the whole group swells gently with the live audio amplitude
+   (--level, 0..1, set from the analyser). Smooth, never jittery. */
+.voice-pulse {
+  transform: scale(calc(1 + var(--level, 0) * 0.16));
+  transition: transform 0.12s ease-out;
+  will-change: transform;
+}
+.voice-ring {
+  position: absolute;
+  border-radius: 9999px;
+  border: 1.5px solid rgba(30, 77, 74, 0.16);
+  animation: ring-breathe 5s ease-in-out infinite;
+}
+@keyframes ring-breathe {
+  0%, 100% { opacity: 0.3; transform: scale(0.96); }
+  50% { opacity: 0.7; transform: scale(1.03); }
+}
+/* a soft coral halo behind the mark that brightens with the voice */
+.voice-halo {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(225, 120, 92, 0.45), transparent 65%);
+  filter: blur(18px);
+  opacity: calc(0.35 + var(--level, 0) * 0.6);
+  transition: opacity 0.12s ease-out;
+}
+
 /* Typing indicator dots. */
 @keyframes dot-blink {
   0%, 70%, 100% { opacity: 0.25; transform: translateY(0); }
