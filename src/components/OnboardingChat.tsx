@@ -157,7 +157,7 @@ export default function OnboardingChat() {
   };
 
   return (
-    <div className="relative h-dvh w-full overflow-hidden bg-cream">
+    <div className="fixed inset-0 overflow-hidden bg-cream">
       {/* living ambient backdrop */}
       <div className="aurora" aria-hidden="true">
         <div className="blob blob-coral" />
@@ -166,7 +166,7 @@ export default function OnboardingChat() {
         <div className="blob blob-rose" />
       </div>
 
-      <div className="relative z-10 mx-auto flex h-dvh max-w-2xl flex-col px-4 sm:px-6">
+      <div className="relative z-10 mx-auto flex h-full max-w-2xl flex-col px-4 sm:px-6">
         <Presence thinking={pending} done={done} />
 
         <main
