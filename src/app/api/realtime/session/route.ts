@@ -42,6 +42,7 @@ export async function POST(): Promise<Response> {
       },
     });
 
+    console.info(`[voice] minted realtime token (model=${REALTIME_MODEL}, voice=${REALTIME_VOICE})`);
     return NextResponse.json({
       value: secret.value,
       expiresAt: secret.expires_at,

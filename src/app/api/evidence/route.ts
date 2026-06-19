@@ -27,5 +27,6 @@ export async function GET(req: Request): Promise<Response> {
     .retrieve(query, limit)
     .map((s) => ({ title: s.title, source: s.source, text: s.text }));
 
+  console.info(`[voice] tool research_parenting "${query}" → ${snippets.length} hit(s)`);
   return NextResponse.json({ snippets });
 }

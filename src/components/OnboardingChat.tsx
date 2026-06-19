@@ -86,6 +86,7 @@ export default function OnboardingChat() {
 
   /** One round-trip to the onboarding API. Returns the parsed response or throws. */
   const turn = useCallback(async (message: string): Promise<OnboardingApiResponse> => {
+    console.info("[chat] → turn:", message.slice(0, 80));
     const res = await fetch("/api/onboarding", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -96,7 +97,11 @@ export default function OnboardingChat() {
       }),
     });
     const data = (await res.json()) as OnboardingApiResponse;
-    if (!res.ok) throw new Error(data.error || "Something went wrong");
+    if (!res.ok) {
+      console.error("[chat] turn failed:", res.status, data.error);
+      throw new Error(data.error || "Something went wrong");
+    }
+    console.info("[chat] ← reply, done =", data.done);
     return data;
   }, []);
 

@@ -30,6 +30,11 @@ const TOOL_RESEARCH = "research_parenting";
 
 const MARK_COLOR = "/brand/compass-mark-color.png";
 
+/** Greppable logs. Next.js dev forwards browser console to
+ *  .next/dev/logs/next-development.log, so these are readable server-side for fast triage. */
+const vlog = (...a: unknown[]) => console.info("[voice]", ...a);
+const verr = (...a: unknown[]) => console.error("[voice]", ...a);
+
 type Status = "connecting" | "live" | "error";
 
 interface FunctionCallItem {
@@ -140,6 +145,7 @@ export default function VoiceOnboarding({
       } catch {
         /* leave args empty */
       }
+      vlog("tool call →", item.name, args);
 
       let result: unknown;
       try {
@@ -171,8 +177,10 @@ export default function VoiceOnboarding({
         }
       } catch (err) {
         setActivity(null);
+        verr("tool failed:", item.name, err);
         result = { error: err instanceof Error ? err.message : "tool failed" };
       }
+      vlog("tool result →", item.name, result);
 
       dc.send(
         JSON.stringify({
@@ -200,6 +208,8 @@ export default function VoiceOnboarding({
       }
       const type = msg.type ?? "";
 
+      if (type === "error") verr("realtime error event:", raw.slice(0, 400));
+
       // Live assistant captions: any "...transcript.delta" carries spoken text.
       if (type.endsWith("transcript.delta") && typeof msg.delta === "string") {
         setCaption((c) => c + msg.delta);
@@ -225,19 +235,24 @@ export default function VoiceOnboarding({
 
     (async () => {
       try {
+        vlog("starting session…");
         const tokenRes = await fetch("/api/realtime/session", { method: "POST" });
         const token = await tokenRes.json();
         if (!tokenRes.ok) throw new Error(token.error || "Could not start voice");
+        vlog("ephemeral token ok, model:", token.model);
         if (cancelled) return;
 
         const pc = new RTCPeerConnection();
         pcRef.current = pc;
+        pc.onconnectionstatechange = () => vlog("peer connection:", pc.connectionState);
+        pc.oniceconnectionstatechange = () => vlog("ice:", pc.iceConnectionState);
 
         // Play the model's voice.
         const audioEl = new Audio();
         audioEl.autoplay = true;
         audioElRef.current = audioEl;
         pc.ontrack = (e) => {
+          vlog("remote audio track received");
           audioEl.srcObject = e.streams[0];
           startAnalyser(e.streams[0]);
         };
@@ -248,6 +263,7 @@ export default function VoiceOnboarding({
           mic.getTracks().forEach((t) => t.stop());
           return;
         }
+        vlog("microphone ready");
         micRef.current = mic;
         mic.getTracks().forEach((t) => pc.addTrack(t, mic));
 
@@ -255,23 +271,30 @@ export default function VoiceOnboarding({
         const dc = pc.createDataChannel("oai-events");
         dcRef.current = dc;
         dc.onmessage = (e) => handleEvent(e.data);
-        dc.onopen = () => !cancelled && setStatus("live");
+        dc.onopen = () => {
+          if (cancelled) return;
+          vlog("data channel open → live");
+          setStatus("live");
+        };
 
         // Offer → OpenAI → answer.
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
+        vlog("posting SDP offer to OpenAI…");
         const sdpRes = await fetch("https://api.openai.com/v1/realtime/calls", {
           method: "POST",
           body: offer.sdp,
           headers: { Authorization: `Bearer ${token.value}`, "Content-Type": "application/sdp" },
         });
-        if (!sdpRes.ok) throw new Error("Voice handshake failed");
+        if (!sdpRes.ok) throw new Error(`Voice handshake failed (${sdpRes.status})`);
         const answer = { type: "answer" as const, sdp: await sdpRes.text() };
         if (cancelled) return;
         await pc.setRemoteDescription(answer);
+        vlog("SDP answer applied — handshake complete");
       } catch (err) {
         if (cancelled) return;
         const m = err instanceof Error ? err.message : "Voice failed to start";
+        verr("failed to start:", m);
         setErrorMsg(m.includes("Permission") || m.includes("denied") ? "I need microphone access to talk." : m);
         setStatus("error");
       }

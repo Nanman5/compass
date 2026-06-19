@@ -56,10 +56,12 @@ export async function POST(req: Request): Promise<Response> {
 
   try {
     const result = await onboardingTurn(onboardingState, message);
+    console.info(`[chat] onboarding turn (family=${familyId}, done=${result.done})`);
 
     // On completion, seed semantic memory with the distilled profile.
     if (result.done && result.profile) {
       await memory.saveProfile(result.profile);
+      console.info(`[chat] saved profile: ${result.profile.childName} (${result.profile.ageBand})`);
     }
 
     return NextResponse.json({

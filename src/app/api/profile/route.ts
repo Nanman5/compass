@@ -49,6 +49,7 @@ export async function POST(req: Request): Promise<Response> {
 
   try {
     const saved = await memory.saveProfile(profile);
+    console.info(`[voice] tool save_family_profile → ${saved.childName} (${saved.ageBand}), family=${familyId}`);
     return NextResponse.json({ ok: true, profile: saved });
   } catch (err) {
     console.error("[profile] save failed:", err);
