@@ -138,16 +138,18 @@ const VALUES = [
 function ValueStrip() {
   return (
     <section className="mx-auto max-w-6xl px-5 -mt-8 pb-10">
-      {/* radiant border: warm gradient ring + soft outer glow */}
-      <div
-        className="rounded-[1.9rem] p-[1.6px]"
-        style={{
-          background: "linear-gradient(120deg, #e6b566 0%, #e1785c 45%, #8fb09a 100%)",
-          boxShadow:
-            "0 0 0 1px rgba(230,181,102,0.25), 0 10px 28px -10px rgba(225,120,92,0.28), 0 0 46px -8px rgba(230,181,102,0.5)",
-        }}
-      >
-        <div className="rounded-[1.8rem] bg-cream-card grid sm:grid-cols-3 sm:divide-x divide-teal/10 overflow-hidden">
+      <div className="relative">
+        {/* diffused radiance — soft blurred colored aura bleeding out from behind the card */}
+        <div
+          aria-hidden="true"
+          className="absolute -inset-7 -z-10 rounded-[3rem]"
+          style={{
+            background: "linear-gradient(120deg, #e6b566, #e1785c 50%, #8fb09a)",
+            filter: "blur(38px)",
+            opacity: 0.6,
+          }}
+        />
+        <div className="relative rounded-[1.8rem] bg-cream-card border border-teal/10 shadow-[var(--shadow-card)] grid sm:grid-cols-3 sm:divide-x divide-teal/10 overflow-hidden">
           {VALUES.map((v) => (
             <div key={v.title} className="p-6 sm:p-7">
               <div
@@ -176,18 +178,18 @@ function ValueStrip() {
 const STEPS = [
   {
     n: 1,
-    title: "Tell us about your child",
-    body: "Share their age, interests, and what's on your mind.",
+    title: "Tell us about your family",
+    body: "A 5–10 minute guided chat learns your child's age, temperament, interests, and what you're struggling with right now.",
   },
   {
     n: 2,
-    title: "Get personalized guidance",
-    body: "Compass turns your answers into tailored ideas, tips, and encouragement.",
+    title: "Get the one next step",
+    body: "Compass turns generic advice into a single concrete action for your child — and tells you when tech helps and when to put the screen away.",
   },
   {
     n: 3,
-    title: "See what works, and grow",
-    body: "Log how it went. Compass remembers and sharpens its advice over time.",
+    title: "It grows with you",
+    body: "After you try it, a quick “how did it go?” Compass remembers what works, sharpens its guidance each week, and shows your progress.",
   },
 ];
 
