@@ -240,6 +240,10 @@ h1, h2, h3, h4 {
   transition: opacity 0.12s ease-out;
 }
 
+/* Agentic tool-activity badge: a compass-needle arc that sweeps while a tool runs. */
+@keyframes tool-spin { to { transform: rotate(360deg); } }
+.tool-spin { animation: tool-spin 0.85s linear infinite; transform-origin: center; }
+
 /* Typing indicator dots. */
 @keyframes dot-blink {
   0%, 70%, 100% { opacity: 0.25; transform: translateY(0); }

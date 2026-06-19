@@ -39,6 +39,13 @@ interface FunctionCallItem {
   arguments?: string;
 }
 
+/** A live, non-technical view of what the agent is doing right now (a tool in flight). */
+interface ToolActivity {
+  kind: "research" | "save";
+  status: "running" | "done";
+  detail?: string;
+}
+
 export default function VoiceOnboarding({
   familyId,
   onClose,
@@ -50,7 +57,7 @@ export default function VoiceOnboarding({
 }) {
   const [status, setStatus] = useState<Status>("connecting");
   const [caption, setCaption] = useState("");
-  const [note, setNote] = useState<string | null>(null);
+  const [activity, setActivity] = useState<ToolActivity | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
   const [muted, setMuted] = useState(false);
 
@@ -61,11 +68,23 @@ export default function VoiceOnboarding({
   const audioCtxRef = useRef<AudioContext | null>(null);
   const rafRef = useRef<number | null>(null);
   const pulseRef = useRef<HTMLDivElement | null>(null);
+  const activityTimerRef = useRef<number | null>(null);
+
+  /** Show what the agent is doing; if `autoClearMs` is given, fade it out after that. */
+  const showActivity = useCallback((next: ToolActivity, autoClearMs?: number) => {
+    if (activityTimerRef.current) window.clearTimeout(activityTimerRef.current);
+    setActivity(next);
+    if (autoClearMs) {
+      activityTimerRef.current = window.setTimeout(() => setActivity(null), autoClearMs);
+    }
+  }, []);
 
   /** Tear down every audio/RTC resource. Safe to call multiple times. */
   const cleanup = useCallback(() => {
     if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     rafRef.current = null;
+    if (activityTimerRef.current) window.clearTimeout(activityTimerRef.current);
+    activityTimerRef.current = null;
     audioCtxRef.current?.close().catch(() => {});
     audioCtxRef.current = null;
     micRef.current?.getTracks().forEach((t) => t.stop());
@@ -125,7 +144,8 @@ export default function VoiceOnboarding({
       let result: unknown;
       try {
         if (item.name === TOOL_SAVE_PROFILE) {
-          setNote("Saving what I learned…");
+          const name = typeof args.childName === "string" ? args.childName.split(/\s+/)[0] : undefined;
+          showActivity({ kind: "save", status: "running", detail: name });
           const res = await fetch("/api/profile", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -134,19 +154,23 @@ export default function VoiceOnboarding({
           const data = await res.json();
           if (data?.profile) {
             onProfileSaved?.(data.profile as ChildProfile);
-            setNote(`Saved ${(data.profile as ChildProfile).childName}'s profile ✓`);
           }
           result = data;
+          showActivity(
+            { kind: "save", status: "done", detail: data?.profile?.childName ?? name },
+            2800,
+          );
         } else if (item.name === TOOL_RESEARCH) {
-          setNote("Looking that up…");
+          showActivity({ kind: "research", status: "running" });
           const query = typeof args.query === "string" ? args.query : "";
           const res = await fetch(`/api/evidence?query=${encodeURIComponent(query)}&limit=3`);
           result = await res.json();
-          setNote(null);
+          showActivity({ kind: "research", status: "done" }, 2000);
         } else {
           result = { error: `unknown tool: ${item.name}` };
         }
       } catch (err) {
+        setActivity(null);
         result = { error: err instanceof Error ? err.message : "tool failed" };
       }
 
@@ -162,7 +186,7 @@ export default function VoiceOnboarding({
       );
       dc.send(JSON.stringify({ type: "response.create" }));
     },
-    [familyId, onProfileSaved],
+    [familyId, onProfileSaved, showActivity],
   );
 
   /** Handle one realtime server event off the data channel. */
@@ -301,7 +325,11 @@ export default function VoiceOnboarding({
                 <p className="text-lg leading-relaxed text-ink">
                   {caption || (status === "connecting" ? "Warming up the microphone…" : "Say hello whenever you're ready.")}
                 </p>
-                {note && <p className="mt-2 text-sm font-semibold text-teal">{note}</p>}
+                {activity && (
+                  <div className="mt-3 flex justify-center">
+                    <ToolBadge activity={activity} />
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -329,6 +357,49 @@ export default function VoiceOnboarding({
         </div>
       </div>
     </div>
+  );
+}
+
+/* ── Agentic tool-activity badge: a warm, non-technical "here's what I'm doing" pill. */
+
+function ToolBadge({ activity }: { activity: ToolActivity }) {
+  const running = activity.status === "running";
+  return (
+    <div className="glass msg-in flex items-center gap-2.5 rounded-full py-1.5 pl-2 pr-4">
+      <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-teal/10">
+        {running ? <SweepIcon /> : <CheckIcon />}
+      </span>
+      <span className="text-sm font-semibold text-teal">{badgeLabel(activity)}</span>
+    </div>
+  );
+}
+
+/** Plain-language copy — never expose tool names or internals to the parent. */
+function badgeLabel(a: ToolActivity): string {
+  if (a.kind === "research") {
+    return a.status === "running" ? "Looking into trusted guidance…" : "Found trusted guidance";
+  }
+  if (a.status === "running") {
+    return a.detail ? `Remembering this about ${a.detail}…` : "Remembering this for your family…";
+  }
+  return a.detail ? `Saved ${a.detail}'s profile` : "Saved to your family";
+}
+
+/** A compass needle sweeping — the agent is "navigating" while a tool runs. */
+function SweepIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="tool-spin">
+      <circle cx="12" cy="12" r="9" stroke="rgba(30,77,74,0.18)" strokeWidth="2.5" />
+      <path d="M12 3a9 9 0 0 1 9 9" stroke="#1e4d4a" strokeWidth="2.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M5 13l4 4L19 7" stroke="#e1785c" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }
 
