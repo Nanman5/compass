@@ -17,7 +17,7 @@ export default function Home() {
         <PasteSection />
         <WeeklyDrop />
         <VoiceCoach />
-        <WhyNow />
+        <Testimonial />
         <Pricing />
       </main>
       <SiteFooter />
@@ -374,7 +374,7 @@ function PasteCard() {
    A generated "This week for <child>" card on the left; descriptive copy on the right. */
 function WeeklyDrop() {
   return (
-    <section className="py-16 sm:py-24 bg-cream-deep/60 border-y border-teal/10">
+    <section className="py-16 sm:py-24">
       <div className="mx-auto max-w-6xl px-5 grid lg:grid-cols-2 gap-12 items-center">
         {/* the weekly-feed card */}
         <Image
@@ -434,76 +434,11 @@ function VoiceCoach() {
   );
 }
 
-/* ─────────────────────────────────────────── Why now (stats + testimonial) */
-const STATS = [
-  {
-    value: "1st",
-    label: "in a decade",
-    color: "#e1785c",
-    tint: "rgba(225,120,92,0.12)",
-    body: "update to AAP screen-time guidance — away from rigid limits, toward quality and context.",
-  },
-  {
-    value: "~50%",
-    label: "of parents",
-    color: "#6f9a7c",
-    tint: "rgba(143,176,154,0.18)",
-    body: "reach for screens to manage difficult behavior — usually without a plan.",
-  },
-  {
-    value: "2–8",
-    label: "the window",
-    color: "#2f6360",
-    tint: "rgba(47,99,96,0.12)",
-    body: "the ages where intentional habits take root — exactly where Compass focuses.",
-  },
-];
-
-function WhyNow() {
+/* ─────────────────────────────────────────── Testimonial */
+function Testimonial() {
   return (
-    <section className="py-16 sm:py-24 bg-cream-deep/60 border-y border-teal/10">
+    <section className="py-16 sm:py-24">
       <div className="mx-auto max-w-5xl px-5">
-        <p className="eyebrow text-center text-sage">Why now</p>
-        <h2 className="mt-2 text-center text-3xl sm:text-4xl font-semibold leading-tight">
-          The guidance changed. The know-how didn&apos;t follow.
-        </h2>
-        <p className="mt-5 text-center text-ink/70 max-w-2xl mx-auto leading-relaxed">
-          In 2026, the American Academy of Pediatrics updated its screen-time guidance for the
-          first time in a decade — moving away from rigid time limits toward quality, context,
-          and conversation. That shift demands exactly what Compass provides: personalized,
-          context-aware guidance for your specific child.
-        </p>
-
-        <div className="mt-12 grid gap-5 sm:grid-cols-3">
-          {STATS.map((s) => (
-            <div
-              key={s.value}
-              className="group relative overflow-hidden rounded-[1.4rem] border border-teal/10 bg-cream-card p-7 shadow-[var(--shadow-card)] transition duration-300 hover:-translate-y-1 hover:shadow-[var(--shadow-soft)]"
-            >
-              {/* colored top accent + a soft glow in the corner for depth */}
-              <span aria-hidden className="absolute inset-x-0 top-0 h-1.5" style={{ background: s.color }} />
-              <span
-                aria-hidden
-                className="absolute -right-10 -top-10 h-28 w-28 rounded-full blur-2xl transition-opacity duration-300 group-hover:opacity-100"
-                style={{ background: s.tint, opacity: 0.85 }}
-              />
-              <p
-                className="relative text-5xl font-semibold leading-none"
-                style={{ fontFamily: "var(--font-display)", color: s.color }}
-              >
-                {s.value}
-              </p>
-              <p
-                className="relative mt-2 text-[0.7rem] font-bold uppercase tracking-[0.14em]"
-                style={{ color: s.color }}
-              >
-                {s.label}
-              </p>
-              <p className="relative mt-3 text-sm leading-relaxed text-ink/70">{s.body}</p>
-            </div>
-          ))}
-        </div>
-
         {/* the testimonial, centered on a warm gradient card */}
         <figure
           className="relative mt-12 rounded-[1.6rem] border border-teal/10 px-8 py-10 sm:px-14 sm:py-12 text-center shadow-[var(--shadow-soft)]"
