@@ -171,7 +171,7 @@ export default function OnboardingChat() {
 
         <main
           ref={scrollRef}
-          className="flex-1 space-y-4 overflow-y-auto overscroll-contain scroll-smooth pb-4 pt-1"
+          className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain scroll-smooth pb-4 pt-1"
           aria-live="polite"
         >
           {messages.map((m) =>
