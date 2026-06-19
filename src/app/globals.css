@@ -92,6 +92,18 @@ h1, h2, h3, h4 {
   color: var(--color-coral);
 }
 
+/* Landing hero decorations: gently float so they feel alive and hand-placed, like the
+   original. Each wrapper sets its own animation-duration/delay so they bob out of sync.
+   Rotation (if any) lives on the inner <img> so it never fights this translate. */
+@keyframes floaty {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-9px); }
+}
+.float {
+  animation: floaty 8s ease-in-out infinite;
+  will-change: transform;
+}
+
 /* ── Immersive onboarding experience (/app) ────────────────────────────
    A living, minimal, full-screen chat: cream base, drifting ambient aurora,
    "wet glass" surfaces, and messages that breathe in. Namespaced so none of
@@ -152,20 +164,20 @@ h1, h2, h3, h4 {
   inset: -20%;
   z-index: 0;
   pointer-events: none;
-  filter: blur(70px);
+  filter: blur(84px);
 }
 .blob {
   position: absolute;
-  width: 46vmax;
-  height: 46vmax;
+  width: 50vmax;
+  height: 50vmax;
   border-radius: 50%;
-  opacity: 0.62;
+  opacity: 0.78;
   will-change: transform;
 }
-.blob-coral { background: radial-gradient(circle, var(--color-coral), transparent 64%); top: -12%; left: -8%; animation: drift-a 22s ease-in-out infinite; }
-.blob-teal  { background: radial-gradient(circle, var(--color-sage), transparent 64%);  bottom: -16%; right: -6%; animation: drift-b 26s ease-in-out infinite; }
-.blob-gold  { background: radial-gradient(circle, var(--color-gold), transparent 66%);  top: 28%; right: 18%; opacity: 0.5; animation: drift-c 30s ease-in-out infinite; }
-.blob-rose  { background: radial-gradient(circle, var(--color-coral), transparent 62%); bottom: -10%; left: 12%; width: 38vmax; height: 38vmax; opacity: 0.4; animation: drift-a 28s ease-in-out infinite reverse; }
+.blob-coral { background: radial-gradient(circle, var(--color-coral), transparent 64%); top: -14%; left: -10%; animation: drift-a 20s ease-in-out infinite; }
+.blob-teal  { background: radial-gradient(circle, var(--color-sage), transparent 64%);  bottom: -18%; right: -8%; animation: drift-b 24s ease-in-out infinite; }
+.blob-gold  { background: radial-gradient(circle, var(--color-gold), transparent 66%);  top: 26%; right: 16%; opacity: 0.62; animation: drift-c 27s ease-in-out infinite; }
+.blob-rose  { background: radial-gradient(circle, var(--color-coral), transparent 62%); bottom: -12%; left: 10%; width: 42vmax; height: 42vmax; opacity: 0.55; animation: drift-a 26s ease-in-out infinite reverse; }
 
 @keyframes drift-a {
   0%, 100% { transform: translate(0, 0) scale(1); }
@@ -240,9 +252,15 @@ h1, h2, h3, h4 {
   transition: opacity 0.12s ease-out;
 }
 
-/* Agentic tool-activity badge: a compass-needle arc that sweeps while a tool runs. */
+/* Agentic tool-activity badge: a compass-needle arc that sweeps gently while a tool runs
+   — slow and calm, not frantic. The badge fades+drops away once it's done. */
 @keyframes tool-spin { to { transform: rotate(360deg); } }
-.tool-spin { animation: tool-spin 0.85s linear infinite; transform-origin: center; }
+.tool-spin { animation: tool-spin 1.8s linear infinite; transform-origin: center; }
+
+@keyframes badge-leave {
+  to { opacity: 0; transform: translateY(8px) scale(0.96); }
+}
+.badge-leaving { animation: badge-leave 0.45s cubic-bezier(0.4, 0, 0.6, 1) forwards; }
 
 /* Typing indicator dots. */
 @keyframes dot-blink {

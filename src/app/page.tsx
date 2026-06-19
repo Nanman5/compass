@@ -1,8 +1,9 @@
 import Link from "next/link";
 import Image from "next/image";
 import { CompassStar, CompassWordmark } from "@/components/CompassStar";
+import { Icon, type IconName } from "@/components/Icon";
 
-const NAV = ["Features", "How it works", "For families", "For partners", "Pricing"];
+const NAV = ["Features", "How it works", "For families", "Pricing", "Resources"];
 
 export default function Home() {
   return (
@@ -12,9 +13,14 @@ export default function Home() {
         <Hero />
         <ValueStrip />
         <HowItWorks />
-        <Testimonial />
-        <ClosingBand />
+        <OneApp />
+        <PasteSection />
+        <WeeklyDrop />
+        <VoiceCoach />
+        <WhyNow />
+        <Pricing />
       </main>
+      <SiteFooter />
     </div>
   );
 }
@@ -54,7 +60,7 @@ function Hero() {
           <div>
             <p className="eyebrow">Support for the moments that matter most</p>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/decor/heart_divider.svg" alt="" aria-hidden className="mt-1 w-72 h-auto" />
+            <img src="/decor/heart_divider.svg" width={800} height={210} alt="" aria-hidden className="mt-1 w-72 h-auto" />
           </div>
           <h1 className="mt-4 text-5xl sm:text-6xl leading-[1.02] font-semibold">
             More confidence.
@@ -69,7 +75,7 @@ function Hero() {
             <Link href="/app" className="btn btn-primary">
               Try Compass
             </Link>
-            <Link href="#how" className="btn btn-ghost">
+            <Link href="#features" className="btn btn-ghost">
               Explore features
             </Link>
           </div>
@@ -85,24 +91,36 @@ function Hero() {
 function HeroScene() {
   return (
     <div className="relative pt-10">
-      {/* cut-out family illustration (transparent bg) floating on the cream page */}
+      {/* cut-out family illustration. Slightly inset (w-[84%] ml-auto) so the decorations
+          have a clear margin to live in and never sit on top of the artwork. */}
       <Image
         src="/img/hero-cutout.png"
         alt="A parent hugging their two young children on a cozy couch"
         width={1401}
         height={902}
-        priority
-        className="relative z-0 w-[94%] ml-auto h-auto"
+        preload
+        className="relative z-0 ml-auto h-auto w-[84%]"
       />
 
-      {/* hand-drawn SVG decorations (user-provided) floating around the scene */}
+      {/* Hand-drawn decorations that ACCOMPANY the illustration: they sit in the negative
+          space (left gutter + top corner), never over the family, and gently float — each
+          with its own duration/delay so they bob out of sync, like the original. */}
       {/* eslint-disable @next/next/no-img-element */}
-      <img src="/decor/hanging_plant.svg" alt="" aria-hidden className="absolute -top-4 right-0 w-16 md:w-20 z-20" />
-      <img src="/decor/frame_doing_great.svg" alt="" aria-hidden className="absolute top-0 right-[33%] w-20 md:w-24 rotate-[-5deg] z-20" />
-      <img src="/decor/frame_botanical.svg" alt="" aria-hidden className="absolute top-8 right-[14%] w-16 md:w-20 rotate-[4deg] z-20" />
-      <img src="/decor/star.svg" alt="" aria-hidden className="absolute left-[3%] top-[14%] w-8 z-20" />
-      <img src="/decor/star.svg" alt="" aria-hidden className="absolute left-[12%] bottom-[16%] w-5 opacity-80 z-20" />
-      <img src="/decor/star.svg" alt="" aria-hidden className="absolute right-[44%] top-[6%] w-4 opacity-70 z-20" />
+      <span className="float pointer-events-none absolute -top-3 right-1 z-20" style={{ animationDuration: "9s" }}>
+        <img src="/decor/hanging_plant.svg" width={308} height={630} alt="" aria-hidden className="h-auto w-12 md:w-14" />
+      </span>
+      <span className="float pointer-events-none absolute left-0 top-2 z-20" style={{ animationDuration: "8s", animationDelay: ".5s" }}>
+        <img src="/decor/frame_doing_great.svg" width={308} height={420} alt="" aria-hidden className="h-auto w-16 -rotate-6 md:w-20" />
+      </span>
+      <span className="float pointer-events-none absolute left-3 top-[42%] z-20" style={{ animationDuration: "7s", animationDelay: ".2s" }}>
+        <img src="/decor/star.svg" width={82} height={80} alt="" aria-hidden className="h-auto w-7" />
+      </span>
+      <span className="float pointer-events-none absolute -left-1 bottom-10 z-20" style={{ animationDuration: "10s", animationDelay: ".8s" }}>
+        <img src="/decor/star.svg" width={82} height={80} alt="" aria-hidden className="h-auto w-4 opacity-80" />
+      </span>
+      <span className="float pointer-events-none absolute left-[34%] top-0 z-20" style={{ animationDuration: "8.5s", animationDelay: "1.1s" }}>
+        <img src="/decor/star.svg" width={82} height={80} alt="" aria-hidden className="h-auto w-3.5 opacity-70" />
+      </span>
       {/* eslint-enable @next/next/no-img-element */}
     </div>
   );
@@ -173,183 +191,519 @@ function ValueStrip() {
 const STEPS = [
   {
     n: 1,
-    title: "Tell us about your family",
-    body: "A 5–10 minute guided chat learns your child's age, temperament, interests, and what you're struggling with right now.",
+    title: "Tell us about your child",
+    body: "Share their age, interests, and what's on your mind in a warm guided chat.",
   },
   {
     n: 2,
-    title: "Get the one next step",
-    body: "Compass turns generic advice into a single concrete action for your child — and tells you when tech helps and when to put the screen away.",
+    title: "Get personalized guidance",
+    body: "Compass turns your answers into tailored ideas, tips, and encouragement.",
   },
   {
     n: 3,
-    title: "It grows with you",
-    body: "After you try it, a quick “how did it go?” Compass remembers what works, sharpens its guidance each week, and shows your progress.",
+    title: "Try it in real life",
+    body: "One small idea at a time. Log how it went and Compass gets sharper.",
   },
 ];
 
 function HowItWorks() {
   return (
-    <section id="how" className="py-16 bg-cream-deep/50 border-y border-teal/10">
+    <section id="how" className="py-16">
       <div className="mx-auto max-w-6xl px-5">
         <h2 className="text-center text-3xl sm:text-4xl font-semibold">How Compass works</h2>
-        <p className="text-center mt-2 text-coral font-semibold">Real support for real life.</p>
 
-        <ol className="mt-12 grid md:grid-cols-3 gap-8">
+        {/* hand-drawn heart divider centered under the heading, as in the target */}
+        <div className="mt-3 flex justify-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/decor/heart_divider.svg" width={800} height={210} alt="" aria-hidden className="w-52 h-auto opacity-80" />
+        </div>
+
+        <ol className="mt-10 grid md:grid-cols-3 gap-8">
           {STEPS.map((s) => (
-            <li key={s.n} className="relative text-center md:text-left">
-              <div className="flex items-center gap-3 justify-center md:justify-start">
-                <span className="w-8 h-8 shrink-0 rounded-full bg-teal text-cream grid place-items-center text-sm font-bold">
-                  {s.n}
-                </span>
-                <CompassStar size={18} className="opacity-70" />
-              </div>
+            <li key={s.n} className="relative text-center">
+              <span className="mx-auto w-9 h-9 shrink-0 rounded-full bg-sage-soft/70 text-teal grid place-items-center text-sm font-bold">
+                {s.n}
+              </span>
               <h3 className="mt-4 text-xl font-semibold">{s.title}</h3>
-              <p className="mt-2 text-ink/70 leading-relaxed">{s.body}</p>
+              <p className="mt-2 text-ink/70 leading-relaxed max-w-xs mx-auto">{s.body}</p>
             </li>
           ))}
         </ol>
+
+        <p className="mt-10 text-center text-sage font-semibold italic" style={{ fontFamily: "var(--font-display)" }}>
+          Real support for real life.
+        </p>
       </div>
     </section>
   );
 }
 
-/* ─────────────────────────────────────────── Testimonial */
-function Testimonial() {
+/* ─────────────────────────────────────────── One app for the whole journey (6-card grid)
+
+   Each feature gets a tinted chip with a line icon. Tints rotate sage → coral →
+   gold across the grid to echo the value strip and the brand palette. */
+const FEATURES: { icon: IconName; tint: string; ink: string; title: string; body: string }[] = [
+  {
+    icon: "chat",
+    tint: "#d7e6da",
+    ink: "#2f6360",
+    title: "Conversational onboarding",
+    body: "A 5–10 minute guided chat that learns your family — your child's age, temperament, interests, and what you're working through.",
+  },
+  {
+    icon: "note",
+    tint: "#f6dcd2",
+    ink: "#cf6147",
+    title: "Paste & personalize",
+    body: "Drop in any article, reel, or screenshot. Compass extracts the real advice, checks it against trusted evidence, and turns it into one concrete next step.",
+  },
+  {
+    icon: "feed",
+    tint: "#f6e7c4",
+    ink: "#c08a36",
+    title: "Weekly drop",
+    body: "Each week, a personalized feed of studies, tips, and activities matched to your child right now — so you don't have to go searching.",
+  },
+  {
+    icon: "mic",
+    tint: "#d7e6da",
+    ink: "#2f6360",
+    title: "“Help Me Now” voice coach",
+    body: "An always-available voice shortcut for the moment of chaos. Just talk to it — it knows your child and responds instantly.",
+  },
+  {
+    icon: "calendar",
+    tint: "#f6dcd2",
+    ink: "#cf6147",
+    title: "Planned activities calendar",
+    body: "Plan and schedule activities ahead, with reminders so good intentions actually turn into action.",
+  },
+  {
+    icon: "loop",
+    tint: "#f6e7c4",
+    ink: "#c08a36",
+    title: "Win logger + improvement loop",
+    body: "After you try something, a quick “How did it go?” Compass remembers what worked and sharpens its advice over time.",
+  },
+];
+
+function OneApp() {
   return (
-    <section className="py-20">
-      <figure className="mx-auto max-w-3xl px-6 text-center">
-        <CompassStar size={28} className="mx-auto opacity-80" />
-        <blockquote
-          style={{ fontFamily: "var(--font-display)" }}
-          className="mt-6 text-2xl sm:text-3xl leading-snug text-teal italic"
-        >
-          “Compass helps me pause, breathe, and choose what&apos;s best.
-          I feel more calm — and my kids do too.”
-        </blockquote>
-        <figcaption className="mt-7 flex items-center justify-center gap-3">
-          <Image
-            src="/img/testimonial-mei.png"
-            alt="Mei, a Compass beta tester, with her child"
-            width={96}
-            height={96}
-            className="w-12 h-12 rounded-full object-cover border-2 border-cream-card shadow-[var(--shadow-card)]"
-          />
-          <span className="text-left">
-            <span className="block text-sm font-bold text-ink">Mei · mom of two</span>
-            <span className="mt-0.5 inline-flex items-center gap-1.5 rounded-full bg-sage-soft/60 px-2 py-0.5 text-[0.7rem] font-bold uppercase tracking-wide text-teal">
-              <span className="w-1.5 h-1.5 rounded-full bg-coral" /> Compass beta tester
-            </span>
+    <section id="features" className="py-16 sm:py-20 bg-cream-deep/60 border-y border-teal/10">
+      <div className="mx-auto max-w-6xl px-5">
+        <p className="eyebrow text-center">Everything in one companion</p>
+        <h2 className="mt-2 text-center text-3xl sm:text-5xl font-semibold">One app for the whole journey</h2>
+        <p className="mt-4 text-center text-ink/70 max-w-xl mx-auto leading-relaxed">
+          Six tools that learn your family and grow with you — teaching you to use technology with intention.
+        </p>
+
+        <div className="mt-12 grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {FEATURES.map((f) => (
+            <article
+              key={f.title}
+              className="rounded-[1.4rem] bg-cream-card border border-teal/10 p-6 shadow-[var(--shadow-card)]"
+            >
+              <div
+                className="w-12 h-12 rounded-2xl grid place-items-center"
+                style={{ background: f.tint, color: f.ink }}
+              >
+                <Icon name={f.icon} size={24} />
+              </div>
+              <h3 className="mt-5 text-lg font-semibold">{f.title}</h3>
+              <p className="mt-2 text-sm text-ink/70 leading-relaxed">{f.body}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────── Paste & personalize
+
+   Text + checklist on the left; a faux "paste" interaction card on the right
+   showing a pasted screenshot turning into Compass's one next step. */
+const PASTE_CHECKS = [
+  "Extracts the real, usable advice",
+  "Checks it against trusted research",
+  "Translates it for your child's age & temperament",
+];
+
+function PasteSection() {
+  return (
+    <section className="py-16 sm:py-24">
+      <div className="mx-auto max-w-6xl px-5 grid lg:grid-cols-2 gap-12 items-center">
+        <div>
+          <p className="eyebrow">Paste &amp; personalize</p>
+          <h2 className="mt-3 text-3xl sm:text-4xl font-semibold leading-tight">
+            Turn the endless scroll into one clear step
+          </h2>
+          <p className="mt-5 text-ink/75 leading-relaxed max-w-md">
+            Saw a reel, an article, a screenshot of advice? Drop it in. Compass reads it,
+            checks it against trusted evidence, and hands back the one thing worth trying
+            for <em>your</em> child today.
+          </p>
+          <ul className="mt-7 space-y-3">
+            {PASTE_CHECKS.map((c) => (
+              <li key={c} className="flex items-center gap-3 text-ink/80">
+                <span className="w-6 h-6 shrink-0 rounded-full bg-sage-soft/70 text-teal grid place-items-center">
+                  <Icon name="check" size={14} />
+                </span>
+                {c}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <PasteCard />
+      </div>
+    </section>
+  );
+}
+
+function PasteCard() {
+  return (
+    <div className="relative">
+      {/* hand-drawn stars peeking out from behind the card corners */}
+      {/* eslint-disable @next/next/no-img-element */}
+      <img src="/decor/star.svg" width={82} height={80} alt="" aria-hidden className="absolute -top-3 -right-2 w-7 h-auto opacity-80" />
+      <img src="/decor/star.svg" width={82} height={80} alt="" aria-hidden className="absolute -bottom-3 -left-2 w-5 h-auto opacity-60" />
+      {/* eslint-enable @next/next/no-img-element */}
+
+      <div className="relative rounded-[1.6rem] bg-cream-card border border-teal/10 p-5 sm:p-6 shadow-[var(--shadow-soft)]">
+        {/* the "pasted" attachment row */}
+        <div className="flex items-center gap-3 rounded-xl border border-teal/10 bg-cream-deep/40 px-4 py-3">
+          <span className="w-9 h-9 rounded-lg grid place-items-center bg-coral/10 text-coral">
+            <Icon name="note" size={18} />
           </span>
-        </figcaption>
-      </figure>
-    </section>
-  );
-}
+          <span className="text-sm">
+            <span className="block font-semibold text-ink">reel_screenshot.png</span>
+            <span className="block text-muted">Pasted from Instagram</span>
+          </span>
+        </div>
 
-/* ─────────────────────────────────────────── Footer: croppable landscape + CSS overlays */
-const SIGNS = ["Understand", "Connect", "Guide", "Grow"];
+        <p className="mt-3 text-center text-sm text-muted italic">Compass is reading…</p>
 
-function Signpost() {
-  return (
-    <div className="relative w-[230px] h-[250px] select-none">
-      {/* wooden post with rounded cap */}
-      <div
-        className="absolute left-6 top-3 bottom-7 w-5 rounded-t-[10px]"
-        style={{
-          background: "linear-gradient(90deg,#7d5a3a 0%,#a87c52 38%,#c49c6e 52%,#8a6440 100%)",
-          boxShadow: "0 8px 14px -8px rgba(62,58,52,0.55)",
-        }}
-      />
-      {/* rocks at the base */}
-      <div className="absolute left-2 bottom-1 flex items-end gap-1">
-        <span className="block w-6 h-3.5 rounded-full bg-[#a7a392]" />
-        <span className="block w-9 h-5 rounded-full bg-[#8f8b7b]" />
-        <span className="block w-5 h-3 rounded-full bg-[#b1ad9c]" />
-      </div>
-      {/* sign planks */}
-      <div className="absolute left-[34px] top-4 flex flex-col gap-2.5">
-        {SIGNS.map((word) => (
-          <div
-            key={word}
-            className="relative pl-5 pr-9 py-2 text-[0.98rem]"
-            style={{
-              fontFamily: "var(--font-display)",
-              color: "#1e4d4a",
-              fontWeight: 600,
-              background: "linear-gradient(180deg,#f4e7cb 0%,#ead7af 70%,#dcc699 100%)",
-              border: "1.5px solid #b7935f",
-              clipPath:
-                "polygon(0 0, calc(100% - 15px) 0, 100% 50%, calc(100% - 15px) 100%, 0 100%)",
-              boxShadow: "0 6px 12px -7px rgba(62,58,52,0.6)",
-            }}
-          >
-            {/* mounting nails */}
-            <span className="absolute left-1.5 top-1.5 w-1 h-1 rounded-full bg-[#8a6c43]" />
-            <span className="absolute left-1.5 bottom-1.5 w-1 h-1 rounded-full bg-[#8a6c43]" />
-            {word}
+        {/* Compass's reply: the one next step */}
+        <div className="mt-3 rounded-xl bg-gold/10 border border-gold/30 p-4">
+          <p className="flex items-center gap-2 text-[0.7rem] font-bold uppercase tracking-wide text-gold">
+            <CompassStar size={14} /> Your next step for Maya, age 4
+          </p>
+          <p className="mt-2 text-ink leading-snug" style={{ fontFamily: "var(--font-display)" }}>
+            &ldquo;Try a 2-minute &lsquo;feelings check-in&rsquo; before screen time ends — name
+            the feeling, then count down together.&rdquo;
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button className="btn btn-primary text-sm px-4 py-2">Add to today</button>
+            <button className="btn btn-ghost text-sm px-4 py-2">Why this works</button>
           </div>
-        ))}
+        </div>
       </div>
     </div>
   );
 }
 
-function ClosingBand() {
-  return (
-    <footer className="relative w-full overflow-hidden">
-      {/* croppable landscape background (no signpost/text baked in) */}
-      <Image
-        src="/img/footer-bg.png"
-        alt=""
-        width={1536}
-        height={512}
-        priority
-        sizes="100vw"
-        className="block w-full h-[210px] md:h-[300px] object-cover object-center"
-      />
-      {/* left wash for text legibility */}
-      <div
-        className="hidden md:block absolute inset-0 pointer-events-none"
-        style={{
-          background:
-            "linear-gradient(90deg, rgba(251,247,240,0.9) 0%, rgba(251,247,240,0.5) 28%, rgba(251,247,240,0) 52%)",
-        }}
-      />
+/* ─────────────────────────────────────────── Weekly drop
 
-      {/* DESKTOP overlay: text left, CSS signpost right */}
-      <div className="hidden md:flex absolute inset-0 items-center">
-        <div className="mx-auto w-full max-w-6xl px-5 flex items-center justify-between gap-6">
-          <div className="max-w-md">
-            <h2 className="text-3xl lg:text-4xl font-semibold leading-tight">
-              You don&apos;t have to have
-              <br />
-              all the answers.
-            </h2>
-            <p className="mt-1 text-2xl text-coral-deep" style={{ fontFamily: "var(--font-display)" }}>
-              We&apos;ll walk with you.
-            </p>
-            <Link href="/app" className="btn btn-primary mt-5">
-              Start your journey
-            </Link>
-            <p className="mt-2 text-sm font-semibold text-teal">Free to try. Cancel anytime.</p>
+   A "This week for <child>" card on the left; descriptive copy on the right. */
+const WEEKLY_ITEMS: { icon: IconName; tint: string; ink: string; kind: string; text: string }[] = [
+  {
+    icon: "book",
+    tint: "#d7e6da",
+    ink: "#2f6360",
+    kind: "Study",
+    text: "How shared reading at 4 builds emotional vocabulary",
+  },
+  {
+    icon: "bulb",
+    tint: "#f6dcd2",
+    ink: "#cf6147",
+    kind: "Tip",
+    text: "A calmer bedtime wind-down for big-feeling days",
+  },
+  {
+    icon: "shield",
+    tint: "#f6e7c4",
+    ink: "#c08a36",
+    kind: "Activity",
+    text: "15-minute kitchen science she'll love this weekend",
+  },
+];
+
+function WeeklyDrop() {
+  return (
+    <section className="py-16 sm:py-24 bg-cream-deep/60 border-y border-teal/10">
+      <div className="mx-auto max-w-6xl px-5 grid lg:grid-cols-2 gap-12 items-center">
+        {/* the weekly-feed card */}
+        <div className="rounded-[1.6rem] bg-cream-card border border-teal/10 p-6 shadow-[var(--shadow-soft)]">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xl font-semibold">This week for Maya</h3>
+            <span className="text-sm text-muted">June 16</span>
           </div>
-          <Signpost />
+          <ul className="mt-5 space-y-3">
+            {WEEKLY_ITEMS.map((it) => (
+              <li
+                key={it.kind}
+                className="flex items-center gap-4 rounded-xl bg-cream-deep/40 border border-teal/10 px-4 py-3"
+              >
+                <span
+                  className="w-10 h-10 shrink-0 rounded-xl grid place-items-center"
+                  style={{ background: it.tint, color: it.ink }}
+                >
+                  <Icon name={it.icon} size={20} />
+                </span>
+                <span>
+                  <span className="block text-[0.7rem] font-bold uppercase tracking-wide" style={{ color: it.ink }}>
+                    {it.kind}
+                  </span>
+                  <span className="block text-sm text-ink/85 leading-snug">{it.text}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div>
+          <p className="eyebrow text-sage">Weekly drop</p>
+          <h2 className="mt-3 text-3xl sm:text-4xl font-semibold leading-tight">
+            Fresh, relevant guidance — without the searching
+          </h2>
+          <p className="mt-5 text-ink/75 leading-relaxed max-w-md">
+            Every week, Compass brings you studies, tips, and activities matched to your
+            child right now. No doomscrolling for answers. Just what&apos;s useful, when it&apos;s
+            useful.
+          </p>
         </div>
       </div>
+    </section>
+  );
+}
 
-      {/* MOBILE: text stacked below the landscape strip */}
-      <div className="md:hidden px-5 py-8" style={{ background: "linear-gradient(180deg,#e3ecdf,#d3e0cf)" }}>
-        <h2 className="text-3xl font-semibold leading-tight">
-          You don&apos;t have to have all the answers.
+/* ─────────────────────────────────────────── Voice coach
+
+   Text on the left; a dark "voice moment" card on the right (the only dark
+   surface on the page) showing the Help Me Now exchange. */
+function VoiceCoach() {
+  return (
+    <section className="py-16 sm:py-24">
+      <div className="mx-auto max-w-6xl px-5 grid lg:grid-cols-2 gap-12 items-center">
+        <div>
+          <p className="eyebrow">&ldquo;Help Me Now&rdquo; voice coach</p>
+          <h2 className="mt-3 text-3xl sm:text-4xl font-semibold leading-tight">
+            For the moment of chaos, just talk
+          </h2>
+          <p className="mt-5 text-ink/75 leading-relaxed max-w-md">
+            Hands full and your kid is melting down? Tap once and talk. Compass knows your
+            child, responds instantly, and can act — pulling an activity, setting a timer,
+            or logging the moment.
+          </p>
+        </div>
+
+        {/* the voice moment, on a deep-teal surface */}
+        <div className="relative rounded-[1.6rem] p-7 sm:p-8 text-cream shadow-[var(--shadow-soft)] bg-teal overflow-hidden">
+          {/* soft brand orbs in the corner for warmth */}
+          <div aria-hidden className="absolute -top-6 -right-6 w-28 h-28 rounded-full bg-sage/30 blur-2xl" />
+
+          <div className="relative flex justify-center">
+            <span className="w-14 h-14 rounded-full bg-coral grid place-items-center text-cream shadow-[0_10px_24px_-10px_rgba(225,120,92,0.9)]">
+              <Icon name="mic" size={24} />
+            </span>
+          </div>
+
+          {/* a little audio-bars flourish */}
+          <div className="relative mt-5 flex items-end justify-center gap-1 h-6" aria-hidden>
+            {[10, 18, 24, 14, 20, 8].map((h, i) => (
+              <span key={i} className="w-1 rounded-full bg-gold" style={{ height: h }} />
+            ))}
+          </div>
+
+          <p className="relative mt-5 text-center text-lg leading-snug" style={{ fontFamily: "var(--font-display)" }}>
+            &ldquo;He won&apos;t put the tablet down and dinner&apos;s burning&rdquo;
+          </p>
+          <p className="relative mt-4 text-sm text-cream/80 leading-relaxed text-center max-w-sm mx-auto">
+            <span className="font-semibold text-cream">Compass:</span> Let&apos;s do a 3-2-1
+            handoff — I&apos;ll set a 2-minute timer and queue his dinosaur song to walk over to
+            the table.
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────── Why now (stats + testimonial) */
+const STATS = [
+  { value: "1st", color: "#e1785c", body: "update to AAP screen-time guidance in over a decade." },
+  { value: "~50%", color: "#8fb09a", body: "of parents report using screens to manage difficult behavior." },
+  { value: "2–8", color: "#2f6360", body: "the ages where intentional habits take root — and Compass focuses." },
+];
+
+function WhyNow() {
+  return (
+    <section className="py-16 sm:py-24 bg-cream-deep/60 border-y border-teal/10">
+      <div className="mx-auto max-w-5xl px-5">
+        <p className="eyebrow text-center text-sage">Why now</p>
+        <h2 className="mt-2 text-center text-3xl sm:text-4xl font-semibold leading-tight">
+          The guidance changed. The know-how didn&apos;t follow.
         </h2>
-        <p className="mt-2 text-2xl text-coral-deep" style={{ fontFamily: "var(--font-display)" }}>
-          We&apos;ll walk with you.
+        <p className="mt-5 text-center text-ink/70 max-w-2xl mx-auto leading-relaxed">
+          In 2026, the American Academy of Pediatrics updated its screen-time guidance for the
+          first time in a decade — moving away from rigid time limits toward quality, context,
+          and conversation. That shift demands exactly what Compass provides: personalized,
+          context-aware guidance for your specific child.
         </p>
-        <Link href="/app" className="btn btn-primary mt-5">
-          Start your journey
-        </Link>
-        <p className="mt-2 text-sm font-semibold text-teal">Free to try. Cancel anytime.</p>
+
+        <div className="mt-10 grid sm:grid-cols-3 gap-5">
+          {STATS.map((s) => (
+            <div key={s.value} className="rounded-[1.3rem] bg-cream-card border border-teal/10 p-6 shadow-[var(--shadow-card)]">
+              <p className="text-4xl font-semibold" style={{ fontFamily: "var(--font-display)", color: s.color }}>
+                {s.value}
+              </p>
+              <p className="mt-3 text-sm text-ink/70 leading-relaxed">{s.body}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* the testimonial, centered on a warm gradient card */}
+        <figure
+          className="relative mt-12 rounded-[1.6rem] border border-teal/10 px-8 py-10 sm:px-14 sm:py-12 text-center shadow-[var(--shadow-soft)]"
+          style={{ background: "linear-gradient(135deg,#fdfbf6 0%,#fbf1e6 60%,#f6ead8 100%)" }}
+        >
+          {/* eslint-disable @next/next/no-img-element */}
+          <img src="/decor/star.svg" width={82} height={80} alt="" aria-hidden className="absolute left-6 top-5 w-6 h-auto opacity-80" />
+          <img src="/decor/star.svg" width={82} height={80} alt="" aria-hidden className="absolute right-7 bottom-6 w-4 h-auto opacity-60" />
+          {/* eslint-enable @next/next/no-img-element */}
+
+          <span className="block text-5xl text-coral leading-none select-none" style={{ fontFamily: "var(--font-display)" }}>
+            &ldquo;
+          </span>
+          <blockquote
+            className="mt-1 text-xl sm:text-2xl leading-snug text-teal italic max-w-xl mx-auto"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
+            Compass helps me pause, breathe, and choose what&apos;s best. I feel more calm — and my
+            kids do too.
+          </blockquote>
+          <figcaption className="mt-6 flex items-center justify-center gap-3">
+            <Image
+              src="/img/testimonial-mei.png"
+              alt="Mei, a Compass beta tester, with her child"
+              width={96}
+              height={96}
+              className="w-10 h-10 rounded-full object-cover border-2 border-cream-card"
+            />
+            <span className="text-sm font-bold text-ink">Mei, mom of two</span>
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────── Pricing */
+const EXPLORE_FEATURES = ["Conversational onboarding", "3 personalized steps a week", "Weekly drop preview"];
+const FAMILY_FEATURES = [
+  "Everything in Explore",
+  "Unlimited paste & personalize",
+  "“Help Me Now” voice coach",
+  "Activity calendar + win logger",
+];
+
+function Pricing() {
+  return (
+    <section id="pricing" className="py-16 sm:py-24">
+      <div className="mx-auto max-w-4xl px-5">
+        <p className="eyebrow text-center">Pricing</p>
+        <h2 className="mt-2 text-center text-3xl sm:text-4xl font-semibold">Start free. Stay if it helps.</h2>
+        <p className="mt-3 text-center text-ink/70">Free to try. Cancel anytime.</p>
+
+        <div className="mt-10 grid sm:grid-cols-2 gap-5 items-start">
+          {/* Explore — free */}
+          <div className="rounded-[1.5rem] bg-cream-card border border-teal/10 p-7 shadow-[var(--shadow-card)]">
+            <h3 className="text-xl font-semibold">Explore</h3>
+            <p className="mt-1 text-sm text-muted">Get to know Compass</p>
+            <p className="mt-5">
+              <span className="text-4xl font-semibold" style={{ fontFamily: "var(--font-display)" }}>$0</span>
+              <span className="text-muted text-sm"> /forever</span>
+            </p>
+            <ul className="mt-6 space-y-3">
+              {EXPLORE_FEATURES.map((f) => (
+                <li key={f} className="flex items-center gap-3 text-sm text-ink/80">
+                  <Icon name="check" size={16} className="text-sage shrink-0" />
+                  {f}
+                </li>
+              ))}
+            </ul>
+            <Link href="/app" className="btn btn-ghost w-full mt-7">
+              Start free
+            </Link>
+          </div>
+
+          {/* Family — paid, highlighted on deep teal */}
+          <div className="relative rounded-[1.5rem] bg-teal text-cream p-7 shadow-[var(--shadow-soft)]">
+            <span className="absolute top-6 right-6 rounded-full bg-gold px-3 py-1 text-[0.7rem] font-bold uppercase tracking-wide text-teal">
+              Popular
+            </span>
+            <h3 className="text-xl font-semibold text-cream">Family</h3>
+            <p className="mt-1 text-sm text-cream/70">The full companion</p>
+            <p className="mt-5">
+              <span className="text-4xl font-semibold text-cream" style={{ fontFamily: "var(--font-display)" }}>$9</span>
+              <span className="text-cream/70 text-sm"> /month</span>
+            </p>
+            <ul className="mt-6 space-y-3">
+              {FAMILY_FEATURES.map((f) => (
+                <li key={f} className="flex items-center gap-3 text-sm text-cream/90">
+                  <Icon name="check" size={16} className="text-gold shrink-0" />
+                  {f}
+                </li>
+              ))}
+            </ul>
+            <Link href="/app" className="btn btn-primary w-full mt-7">
+              Start 14-day free trial
+            </Link>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────── Footer */
+const FOOTER_COLS: { heading: string; links: string[] }[] = [
+  { heading: "Product", links: ["Features", "How it works", "Pricing"] },
+  { heading: "Company", links: ["About", "For partners", "Careers"] },
+  { heading: "Support", links: ["Help center", "Privacy", "Terms"] },
+];
+
+function SiteFooter() {
+  return (
+    <footer className="border-t border-teal/10 bg-cream">
+      <div className="mx-auto max-w-6xl px-5 py-14">
+        <div className="grid gap-10 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
+          <div className="max-w-xs">
+            <CompassWordmark />
+            <p className="mt-4 text-sm text-muted leading-relaxed">
+              A parenting companion for the digital age. Technology with intention.
+            </p>
+          </div>
+          {FOOTER_COLS.map((col) => (
+            <div key={col.heading}>
+              <p className="text-[0.7rem] font-bold uppercase tracking-wide text-teal/70">{col.heading}</p>
+              <ul className="mt-4 space-y-2.5 text-sm text-ink/70">
+                {col.links.map((l) => (
+                  <li key={l} className="hover:text-teal transition-colors cursor-pointer">
+                    {l}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-12 pt-6 border-t border-teal/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-sm text-muted">
+          <p>© 2026 Compass. Made with care for families.</p>
+          <p>hello@compass.family</p>
+        </div>
       </div>
     </footer>
   );

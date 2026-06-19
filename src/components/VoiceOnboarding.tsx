@@ -63,6 +63,7 @@ export default function VoiceOnboarding({
   const [status, setStatus] = useState<Status>("connecting");
   const [caption, setCaption] = useState("");
   const [activity, setActivity] = useState<ToolActivity | null>(null);
+  const [activityLeaving, setActivityLeaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [muted, setMuted] = useState(false);
 
@@ -73,14 +74,26 @@ export default function VoiceOnboarding({
   const audioCtxRef = useRef<AudioContext | null>(null);
   const rafRef = useRef<number | null>(null);
   const pulseRef = useRef<HTMLDivElement | null>(null);
-  const activityTimerRef = useRef<number | null>(null);
+  const activityTimers = useRef<number[]>([]);
 
-  /** Show what the agent is doing; if `autoClearMs` is given, fade it out after that. */
+  /**
+   * Show what the agent is doing. When `autoClearMs` is given, after that delay the badge
+   * plays a gentle fade-out (badge-leaving) and only then unmounts — so it drops away
+   * smoothly instead of lingering or popping.
+   */
   const showActivity = useCallback((next: ToolActivity, autoClearMs?: number) => {
-    if (activityTimerRef.current) window.clearTimeout(activityTimerRef.current);
+    activityTimers.current.forEach(window.clearTimeout);
+    activityTimers.current = [];
+    setActivityLeaving(false);
     setActivity(next);
     if (autoClearMs) {
-      activityTimerRef.current = window.setTimeout(() => setActivity(null), autoClearMs);
+      activityTimers.current.push(
+        window.setTimeout(() => setActivityLeaving(true), autoClearMs),
+        window.setTimeout(() => {
+          setActivity(null);
+          setActivityLeaving(false);
+        }, autoClearMs + 450),
+      );
     }
   }, []);
 
@@ -88,8 +101,8 @@ export default function VoiceOnboarding({
   const cleanup = useCallback(() => {
     if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     rafRef.current = null;
-    if (activityTimerRef.current) window.clearTimeout(activityTimerRef.current);
-    activityTimerRef.current = null;
+    activityTimers.current.forEach(window.clearTimeout);
+    activityTimers.current = [];
     audioCtxRef.current?.close().catch(() => {});
     audioCtxRef.current = null;
     micRef.current?.getTracks().forEach((t) => t.stop());
@@ -164,14 +177,14 @@ export default function VoiceOnboarding({
           result = data;
           showActivity(
             { kind: "save", status: "done", detail: data?.profile?.childName ?? name },
-            2800,
+            2000,
           );
         } else if (item.name === TOOL_RESEARCH) {
           showActivity({ kind: "research", status: "running" });
           const query = typeof args.query === "string" ? args.query : "";
           const res = await fetch(`/api/evidence?query=${encodeURIComponent(query)}&limit=3`);
           result = await res.json();
-          showActivity({ kind: "research", status: "done" }, 2000);
+          showActivity({ kind: "research", status: "done" }, 1600);
         } else {
           result = { error: `unknown tool: ${item.name}` };
         }
@@ -350,7 +363,7 @@ export default function VoiceOnboarding({
                 </p>
                 {activity && (
                   <div className="mt-3 flex justify-center">
-                    <ToolBadge activity={activity} />
+                    <ToolBadge activity={activity} leaving={activityLeaving} />
                   </div>
                 )}
               </>
@@ -385,10 +398,12 @@ export default function VoiceOnboarding({
 
 /* ── Agentic tool-activity badge: a warm, non-technical "here's what I'm doing" pill. */
 
-function ToolBadge({ activity }: { activity: ToolActivity }) {
+function ToolBadge({ activity, leaving }: { activity: ToolActivity; leaving: boolean }) {
   const running = activity.status === "running";
   return (
-    <div className="glass msg-in flex items-center gap-2.5 rounded-full py-1.5 pl-2 pr-4">
+    <div
+      className={`glass ${leaving ? "badge-leaving" : "msg-in"} flex items-center gap-2.5 rounded-full py-1.5 pl-2 pr-4`}
+    >
       <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-teal/10">
         {running ? <SweepIcon /> : <CheckIcon />}
       </span>

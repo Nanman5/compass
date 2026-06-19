@@ -213,19 +213,25 @@ export default function OnboardingChat() {
           className="min-h-0 flex-1 overflow-y-auto overscroll-contain scroll-smooth"
           aria-live="polite"
         >
-          <div className="mx-auto w-full max-w-2xl space-y-4 px-4 pb-6 pt-1 sm:px-6">
-            {messages.map((m) =>
-              m.role === "assistant" ? (
-                <AssistantBubble key={m.id} text={m.text} />
-              ) : (
-                <UserBubble key={m.id} text={m.text} />
-              ),
-            )}
+          {done && profile ? (
+            // Results screen: just the recap, no transcript / greeting bubble.
+            <div className="mx-auto w-full max-w-4xl px-4 pb-12 pt-2 sm:px-6">
+              <Recap profile={profile} />
+            </div>
+          ) : (
+            <div className="mx-auto w-full max-w-2xl space-y-4 px-4 pb-6 pt-1 sm:px-6">
+              {messages.map((m) =>
+                m.role === "assistant" ? (
+                  <AssistantBubble key={m.id} text={m.text} />
+                ) : (
+                  <UserBubble key={m.id} text={m.text} />
+                ),
+              )}
 
-            {pending && <TypingBubble />}
-            {error && <ErrorBubble text={error} onRetry={() => void send()} />}
-            {done && profile && <Recap profile={profile} />}
-          </div>
+              {pending && <TypingBubble />}
+              {error && <ErrorBubble text={error} onRetry={() => void send()} />}
+            </div>
+          )}
         </main>
 
         {!done && (
@@ -277,9 +283,11 @@ function Presence({ thinking, done }: { thinking: boolean; done: boolean }) {
       >
         Compass
       </span>
-      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-coral">
-        {done ? "All set" : thinking ? "Listening…" : "Getting to know your family"}
-      </p>
+      {!done && (
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-coral">
+          {thinking ? "Listening…" : "Getting to know your family"}
+        </p>
+      )}
     </header>
   );
 }
@@ -420,66 +428,151 @@ function Composer({
 
 /* ───────────────────────────────────────── completion recap + coming soon */
 
-const COMING_SOON = [
+type ComingIcon = "step" | "graph" | "bookmark";
+
+const COMING_SOON: { title: string; body: string; icon: ComingIcon }[] = [
   {
     title: "Your one next step",
     body: "Describe a struggle and Compass returns a single concrete action — plus when to put the screen away.",
+    icon: "step",
   },
   {
     title: "Win logger",
     body: "A quick “how did it go?” after you try a step, so guidance sharpens to what actually works for your child.",
+    icon: "graph",
   },
   {
     title: "What Compass remembers",
     body: "See and clear everything Compass has learned about your family. Your data, your call.",
+    icon: "bookmark",
   },
 ];
 
 function Recap({ profile }: { profile: ChildProfile }) {
-  const rows: { label: string; value: string }[] = [
-    { label: "Age", value: profile.ageBand },
-    { label: "Temperament", value: profile.temperament.join(", ") || "—" },
-    { label: "Loves", value: profile.interests.join(", ") || "—" },
-    { label: "Working on", value: profile.struggles.join(", ") || "—" },
+  const left: [string, string][] = [
+    ["Age", profile.ageBand],
+    ["Loves", profile.interests.join(", ") || "—"],
   ];
-  if (profile.context) rows.push({ label: "Context", value: profile.context });
+  const right: [string, string][] = [
+    ["Temperament", profile.temperament.join(", ") || "—"],
+    ["Working on", profile.struggles.join(", ") || "—"],
+  ];
 
   return (
-    <div className="msg-in space-y-5 pt-2">
-      <div className="glass rounded-3xl p-6">
-        <p className="eyebrow">Profile saved</p>
-        <h2 className="mt-1 text-2xl font-semibold text-teal">
-          Here&apos;s what Compass learned about {profile.childName}
-        </h2>
-        <dl className="mt-4 grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
-          {rows.map((r) => (
-            <div key={r.label} className="flex flex-col">
-              <dt className="text-xs font-bold uppercase tracking-wide text-muted">{r.label}</dt>
-              <dd className="mt-0.5 text-[0.98rem] text-ink">{r.value}</dd>
+    <div className="msg-in space-y-8">
+      {/* boarding-pass style profile card: solid teal stub + warm gradient body */}
+      <div className="overflow-hidden rounded-[1.6rem] shadow-[var(--shadow-soft)]">
+        <div className="flex">
+          <div className="relative hidden w-16 shrink-0 flex-col items-center justify-center gap-3 bg-teal text-cream/90 sm:flex">
+            <span className="absolute left-3 top-4 text-cream/40">✦</span>
+            <span className="absolute bottom-4 right-3 text-xs text-cream/40">✦</span>
+            <span className="grid h-10 w-10 place-items-center rounded-full border border-cream/30">
+              <LeafIcon />
+            </span>
+          </div>
+          <div
+            className="relative flex-1 p-6 sm:p-7"
+            style={{
+              background:
+                "linear-gradient(115deg, #fdfbf6 0%, #f7e7d8 55%, #dfeae6 100%)",
+            }}
+          >
+            <p className="eyebrow">Profile saved</p>
+            <h2 className="mt-1 text-2xl font-semibold leading-tight text-teal">
+              Here&apos;s what Compass learned about {profile.childName}
+            </h2>
+            <div className="mt-5 grid grid-cols-1 gap-6 sm:grid-cols-2 sm:divide-x sm:divide-teal/15">
+              <dl className="space-y-4 sm:pr-6">
+                {left.map(([k, v]) => (
+                  <Field key={k} label={k} value={v} />
+                ))}
+              </dl>
+              <dl className="space-y-4 sm:pl-6">
+                {right.map(([k, v]) => (
+                  <Field key={k} label={k} value={v} />
+                ))}
+              </dl>
             </div>
-          ))}
-        </dl>
+          </div>
+        </div>
       </div>
 
+      {/* coming next */}
       <div>
-        <p className="px-1 text-sm font-semibold text-teal/80">Coming next</p>
-        <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="flex items-center gap-4">
+          <span className="eyebrow shrink-0">Coming next</span>
+          <span className="h-px flex-1 bg-teal/15" />
+        </div>
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
           {COMING_SOON.map((c) => (
-            <div
-              key={c.title}
-              className="glass relative overflow-hidden rounded-2xl p-4 opacity-80"
-              aria-disabled="true"
-            >
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-sage-soft/70 px-2.5 py-0.5 text-[0.62rem] font-bold uppercase tracking-wide text-teal">
-                <span className="h-1.5 w-1.5 rounded-full bg-coral" />
-                Coming soon
+            <div key={c.title} className="glass flex flex-col rounded-2xl p-5" aria-disabled="true">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-sage-soft/50 text-teal">
+                <ComingSoonIcon kind={c.icon} />
               </span>
-              <h3 className="mt-2.5 text-[0.95rem] font-semibold text-teal">{c.title}</h3>
-              <p className="mt-1 text-[0.82rem] leading-relaxed text-ink/65">{c.body}</p>
+              <h3 className="mt-3 text-[0.98rem] font-semibold leading-snug text-teal">{c.title}</h3>
+              <p className="mt-1.5 flex-1 text-[0.84rem] leading-relaxed text-ink/65">{c.body}</p>
+              <div className="mt-4 flex justify-end">
+                <span
+                  className="grid h-9 w-9 place-items-center rounded-full border border-teal/20 text-teal/60"
+                  title="Coming soon"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M5 12h13M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </span>
+              </div>
             </div>
           ))}
         </div>
       </div>
+
+      {/* footer */}
+      <div className="pt-2 text-center">
+        <span className="text-coral">♡</span>
+        <p className="mt-1 text-sm italic text-teal/70" style={{ fontFamily: "var(--font-display)" }}>
+          Guidance for your family. Built around you.
+        </p>
+      </div>
     </div>
+  );
+}
+
+function Field({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <dt className="text-[0.68rem] font-bold uppercase tracking-wide text-muted">{label}</dt>
+      <dd className="mt-0.5 text-[0.98rem] text-ink">{value}</dd>
+    </div>
+  );
+}
+
+function LeafIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 20s8-3 8-11V5h-4c-8 0-8 8-8 8 0-4-3-5-3-5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function ComingSoonIcon({ kind }: { kind: ComingIcon }) {
+  const common = { width: 18, height: 18, viewBox: "0 0 24 24", fill: "none", "aria-hidden": true } as const;
+  if (kind === "step")
+    return (
+      <svg {...common}>
+        <path d="M4 19h5v-5h5V9h5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  if (kind === "graph")
+    return (
+      <svg {...common}>
+        <path d="M4 16l5-5 4 3 7-8" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="9" cy="11" r="1.4" fill="currentColor" />
+        <circle cx="13" cy="14" r="1.4" fill="currentColor" />
+      </svg>
+    );
+  return (
+    <svg {...common}>
+      <path d="M7 4h10v16l-5-3-5 3V4z" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }
