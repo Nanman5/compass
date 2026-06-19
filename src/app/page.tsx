@@ -81,31 +81,59 @@ function Hero() {
 }
 
 function HeroScene() {
+  const feather =
+    "radial-gradient(128% 122% at 52% 44%, #000 62%, rgba(0,0,0,0.35) 84%, transparent 100%)";
   return (
     <div className="relative">
-      <div
-        className="aspect-[3/2] rounded-[2rem] border border-teal/10 overflow-hidden bg-cream-deep"
-        style={{ boxShadow: "var(--shadow-soft)" }}
+      {/* image blended into the page — no card, soft feathered edges */}
+      <Image
+        src="/img/hero-family.png"
+        alt="A parent hugging their two young children on a cozy couch"
+        width={1536}
+        height={1024}
+        priority
+        className="w-full h-auto"
+        style={{ WebkitMaskImage: feather, maskImage: feather }}
+      />
+
+      {/* hand-drawn SVG accents to make it feel alive */}
+      <svg
+        className="absolute -left-3 bottom-6 w-28 h-16 opacity-70 pointer-events-none"
+        viewBox="0 0 120 60"
+        fill="none"
+        aria-hidden="true"
       >
-        <Image
-          src="/img/hero-family.png"
-          alt="A parent hugging their two young children on a cozy couch"
-          width={1536}
-          height={1024}
-          priority
-          className="w-full h-full object-cover"
+        <path
+          d="M4 40 C 28 8, 44 8, 56 32 S 92 56, 116 22"
+          stroke="#8fb09a"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeDasharray="1 8"
         />
-      </div>
+      </svg>
+      <svg
+        className="absolute right-8 bottom-2 w-10 h-10 opacity-80 pointer-events-none"
+        viewBox="0 0 24 24"
+        fill="none"
+        aria-hidden="true"
+      >
+        <path
+          d="M12 20s-7-4.6-7-9.3A3.7 3.7 0 0112 8a3.7 3.7 0 017 2.7C19 15.4 12 20 12 20z"
+          stroke="#e1785c"
+          strokeWidth="1.6"
+        />
+      </svg>
 
       {/* floating note */}
-      <div className="absolute -top-3 right-4 rotate-[6deg] bg-cream-card rounded-xl px-4 py-3 shadow-[var(--shadow-card)] border border-teal/10">
+      <div className="absolute top-2 right-2 rotate-[6deg] bg-cream-card rounded-xl px-4 py-3 shadow-[var(--shadow-card)] border border-teal/10">
         <span style={{ fontFamily: "var(--font-display)" }} className="italic text-teal text-sm">
           You&apos;re doing great
         </span>
       </div>
-      {/* doodle stars */}
-      <CompassStar size={22} className="absolute -left-2 top-10 opacity-80" />
-      <CompassStar size={16} className="absolute left-6 bottom-6 opacity-60" />
+      {/* sparkles */}
+      <CompassStar size={22} className="absolute left-1 top-12 opacity-80" />
+      <CompassStar size={14} className="absolute left-10 bottom-10 opacity-60" />
+      <CompassStar size={12} className="absolute right-16 top-8 opacity-60" />
     </div>
   );
 }
@@ -234,19 +262,110 @@ function Testimonial() {
   );
 }
 
-/* ─────────────────────────────────────────── Footer (just the banner) */
+/* ─────────────────────────────────────────── Footer: croppable landscape + CSS overlays */
+const SIGNS = ["Understand", "Connect", "Guide", "Grow"];
+
+function Signpost() {
+  return (
+    <div className="relative w-[230px] h-[250px] select-none">
+      {/* wooden post with rounded cap */}
+      <div
+        className="absolute left-6 top-3 bottom-7 w-5 rounded-t-[10px]"
+        style={{
+          background: "linear-gradient(90deg,#7d5a3a 0%,#a87c52 38%,#c49c6e 52%,#8a6440 100%)",
+          boxShadow: "0 8px 14px -8px rgba(62,58,52,0.55)",
+        }}
+      />
+      {/* rocks at the base */}
+      <div className="absolute left-2 bottom-1 flex items-end gap-1">
+        <span className="block w-6 h-3.5 rounded-full bg-[#a7a392]" />
+        <span className="block w-9 h-5 rounded-full bg-[#8f8b7b]" />
+        <span className="block w-5 h-3 rounded-full bg-[#b1ad9c]" />
+      </div>
+      {/* sign planks */}
+      <div className="absolute left-[34px] top-4 flex flex-col gap-2.5">
+        {SIGNS.map((word) => (
+          <div
+            key={word}
+            className="relative pl-5 pr-9 py-2 text-[0.98rem]"
+            style={{
+              fontFamily: "var(--font-display)",
+              color: "#1e4d4a",
+              fontWeight: 600,
+              background: "linear-gradient(180deg,#f4e7cb 0%,#ead7af 70%,#dcc699 100%)",
+              border: "1.5px solid #b7935f",
+              clipPath:
+                "polygon(0 0, calc(100% - 15px) 0, 100% 50%, calc(100% - 15px) 100%, 0 100%)",
+              boxShadow: "0 6px 12px -7px rgba(62,58,52,0.6)",
+            }}
+          >
+            {/* mounting nails */}
+            <span className="absolute left-1.5 top-1.5 w-1 h-1 rounded-full bg-[#8a6c43]" />
+            <span className="absolute left-1.5 bottom-1.5 w-1 h-1 rounded-full bg-[#8a6c43]" />
+            {word}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function ClosingBand() {
   return (
-    <footer className="w-full">
+    <footer className="relative w-full overflow-hidden">
+      {/* croppable landscape background (no signpost/text baked in) */}
       <Image
-        src="/img/footer-journey.png"
-        alt="A winding path toward a sunrise, with a signpost reading Understand, Connect, Guide, Grow"
-        width={2172}
-        height={646}
+        src="/img/footer-bg.png"
+        alt=""
+        width={1536}
+        height={512}
         priority
         sizes="100vw"
-        className="block w-full h-[150px] sm:h-[180px] object-cover object-center"
+        className="block w-full h-[210px] md:h-[300px] object-cover object-center"
       />
+      {/* left wash for text legibility */}
+      <div
+        className="hidden md:block absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            "linear-gradient(90deg, rgba(251,247,240,0.9) 0%, rgba(251,247,240,0.5) 28%, rgba(251,247,240,0) 52%)",
+        }}
+      />
+
+      {/* DESKTOP overlay: text left, CSS signpost right */}
+      <div className="hidden md:flex absolute inset-0 items-center">
+        <div className="mx-auto w-full max-w-6xl px-5 flex items-center justify-between gap-6">
+          <div className="max-w-md">
+            <h2 className="text-3xl lg:text-4xl font-semibold leading-tight">
+              You don&apos;t have to have
+              <br />
+              all the answers.
+            </h2>
+            <p className="mt-1 text-2xl text-coral-deep" style={{ fontFamily: "var(--font-display)" }}>
+              We&apos;ll walk with you.
+            </p>
+            <Link href="/app" className="btn btn-primary mt-5">
+              Start your journey
+            </Link>
+            <p className="mt-2 text-sm font-semibold text-teal">Free to try. Cancel anytime.</p>
+          </div>
+          <Signpost />
+        </div>
+      </div>
+
+      {/* MOBILE: text stacked below the landscape strip */}
+      <div className="md:hidden px-5 py-8" style={{ background: "linear-gradient(180deg,#e3ecdf,#d3e0cf)" }}>
+        <h2 className="text-3xl font-semibold leading-tight">
+          You don&apos;t have to have all the answers.
+        </h2>
+        <p className="mt-2 text-2xl text-coral-deep" style={{ fontFamily: "var(--font-display)" }}>
+          We&apos;ll walk with you.
+        </p>
+        <Link href="/app" className="btn btn-primary mt-5">
+          Start your journey
+        </Link>
+        <p className="mt-2 text-sm font-semibold text-teal">Free to try. Cancel anytime.</p>
+      </div>
     </footer>
   );
 }

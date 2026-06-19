@@ -71,25 +71,25 @@ const IMAGES = {
       "Avoid: studio lighting, flawless skin, airbrushed face, glossy AI look, oversharpening, perfect " +
       "symmetry, editorial pose, fake bokeh, perfect hands, extra fingers, distorted hands, excessive yellow.",
   },
-  // Footer scene — composed as a WIDE FULL-BLEED BANNER (used as a background that the text
-  // sits on top of). DELIBERATELY includes lettering on the signpost.
-  "footer-journey": {
-    size: "1536x1024",
+  // Footer scene — ULTRA-WIDE short banner so it sits full-bleed AND low without cropping.
+  // size:"auto" lets gpt-image-2 pick the aspect ratio requested in the prompt.
+  // Footer BACKGROUND only — no signpost, no text (the signpost is drawn in CSS over this).
+  // Designed with a generous safe area so it can be cropped to any height without losing anything.
+  "footer-bg": {
+    size: "1536x512", // 3:1 — widest gpt-image-2 allows; we crop it freely with object-cover
+    quality: "medium",
     prompt:
-      "A wide horizontal banner illustration of a peaceful landscape at soft golden sunrise, " +
-      "composed to be used as a full-width website footer background that text will be placed on top of. " +
-      "IMPORTANT COMPOSITION: keep the LEFT 40% of the image calm, open and uncluttered — just soft hazy " +
-      "sunrise sky and distant low-detail rolling hills with plenty of empty negative space there for text " +
-      "to be overlaid. Place the main subject — a charming wooden directional signpost — in the RIGHT THIRD " +
-      "of the image, vertically centered. The signpost is a single wooden post with four small rounded " +
-      "cream-colored sign boards mounted one above another; each board shows exactly one clearly legible " +
-      "word in clean dark-teal hand-lettered serif text. From top to bottom the four words are: " +
-      "\"Understand\", \"Connect\", \"Guide\", \"Grow\". Spell each word correctly. A winding dirt path " +
-      "runs across the lower-center toward the rising sun. Generous open sky above and a low band of " +
-      "wildflowers along the bottom, so the image still reads well if the top and bottom edges are slightly " +
-      "cropped. Warm, gentle hand-drawn editorial storybook illustration with soft paper texture. " +
-      "Calming earthy palette: sage greens (#8fb09a), cream (#fbf7f0), terracotta-coral (#e1785c), " +
-      "deep teal (#1e4d4a), warm gold sun (#e6b566). No other text anywhere except those four signpost words.",
+      "A wide thin panoramic storybook LANDSCAPE illustration (3:1), made to be used as a website footer " +
+      "background that gets cropped to different heights — so the scene must look good even if the top and " +
+      "bottom edges are cropped (a generous safe area, with the horizon around the vertical middle). " +
+      "Soft golden sunrise over gentle rolling green hills; a winding dirt path leading toward the warm " +
+      "rising sun near the center; a few soft trees on the left, leafy bushes and shrubs on the right; a " +
+      "low row of wildflowers along the bottom; soft hazy pale sky in the upper area. Keep the LEFT THIRD " +
+      "calmer and more open (gentle hills and sky) so text can be overlaid there. " +
+      "ABSOLUTELY NO text, NO words, NO signpost, NO people, NO animals. " +
+      "Warm, gentle hand-drawn editorial storybook illustration with soft paper texture. Calming earthy " +
+      "palette: sage greens (#8fb09a), cream (#fbf7f0), terracotta-coral (#e1785c), deep teal (#1e4d4a), " +
+      "warm gold sun (#e6b566).",
   },
 };
 
