@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { CompassStar, CompassWordmark } from "@/components/CompassStar";
 
 const NAV = ["Features", "How it works", "For families", "For partners", "Pricing"];
@@ -83,33 +84,18 @@ function Hero() {
 function HeroScene() {
   return (
     <div className="relative">
-      {/* warm backdrop */}
       <div
-        className="aspect-[5/4] rounded-[2rem] border border-teal/10 overflow-hidden"
-        style={{
-          background:
-            "radial-gradient(120% 100% at 30% 20%, #fde9d8 0%, #f6d9c4 38%, #e9c8ad 100%)",
-          boxShadow: "var(--shadow-soft)",
-        }}
+        className="aspect-[3/2] rounded-[2rem] border border-teal/10 overflow-hidden bg-cream-deep"
+        style={{ boxShadow: "var(--shadow-soft)" }}
       >
-        {/* abstract "family moment": overlapping figures */}
-        <svg viewBox="0 0 400 320" className="w-full h-full">
-          {/* couch */}
-          <rect x="40" y="210" width="320" height="80" rx="28" fill="#cdb59b" opacity="0.7" />
-          {/* parent */}
-          <circle cx="200" cy="150" r="42" fill="#2f6360" />
-          <rect x="150" y="180" width="100" height="90" rx="40" fill="#2f6360" />
-          {/* child left */}
-          <circle cx="140" cy="190" r="28" fill="#e1785c" />
-          <rect x="112" y="210" width="56" height="60" rx="26" fill="#e1785c" />
-          {/* child right */}
-          <circle cx="262" cy="192" r="26" fill="#e6b566" />
-          <rect x="236" y="210" width="52" height="58" rx="24" fill="#e6b566" />
-          {/* plant */}
-          <rect x="338" y="232" width="20" height="40" rx="6" fill="#c98b6a" />
-          <path d="M348 232 q-22 -26 -4 -50 q22 16 4 50Z" fill="#8fb09a" />
-          <path d="M348 232 q22 -22 6 -46 q-20 18 -6 46Z" fill="#8fb09a" opacity="0.8" />
-        </svg>
+        <Image
+          src="/img/hero-family.png"
+          alt="A parent hugging their two young children on a cozy couch"
+          width={1536}
+          height={1024}
+          priority
+          className="w-full h-full object-cover"
+        />
       </div>
 
       {/* floating note */}
@@ -130,17 +116,17 @@ const VALUES = [
   {
     title: "Personalized guidance",
     body: "Advice that fits your child, your values, and your everyday life.",
-    icon: "🫶",
+    img: "/img/value-guidance.png",
   },
   {
     title: "Practical next steps",
     body: "Small, doable actions you can try right away — no overwhelm.",
-    icon: "🪶",
+    img: "/img/value-steps.png",
   },
   {
     title: "Grow with your child",
     body: "Tools and insights that evolve as your child does too.",
-    icon: "🌱",
+    img: "/img/value-grow.png",
   },
 ];
 
@@ -153,8 +139,14 @@ function ValueStrip() {
             key={v.title}
             className="bg-cream-card rounded-2xl border border-teal/10 p-6 shadow-[var(--shadow-card)]"
           >
-            <div className="w-11 h-11 rounded-full bg-sage-soft/60 grid place-items-center text-xl">
-              {v.icon}
+            <div className="w-14 h-14 rounded-2xl overflow-hidden border border-teal/10">
+              <Image
+                src={v.img}
+                alt=""
+                width={128}
+                height={128}
+                className="w-full h-full object-cover"
+              />
             </div>
             <h3 className="mt-4 text-lg font-semibold">{v.title}</h3>
             <p className="mt-1.5 text-sm text-ink/70 leading-relaxed">{v.body}</p>
