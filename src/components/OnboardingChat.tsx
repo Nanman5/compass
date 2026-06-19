@@ -505,21 +505,28 @@ function Recap({ profile }: { profile: ChildProfile }) {
         </div>
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
           {COMING_SOON.map((c) => (
-            <div key={c.title} className="glass flex flex-col rounded-2xl p-5" aria-disabled="true">
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-sage-soft/50 text-teal">
-                <ComingSoonIcon kind={c.icon} />
-              </span>
-              <h3 className="mt-3 text-[0.98rem] font-semibold leading-snug text-teal">{c.title}</h3>
-              <p className="mt-1.5 flex-1 text-[0.84rem] leading-relaxed text-ink/65">{c.body}</p>
-              <div className="mt-4 flex justify-end">
-                <span
-                  className="grid h-9 w-9 place-items-center rounded-full border border-teal/20 text-teal/60"
-                  title="Coming soon"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M5 12h13M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
+            <div
+              key={c.title}
+              className="glass relative flex cursor-not-allowed select-none flex-col rounded-2xl p-5 opacity-70"
+              aria-disabled="true"
+              title="Coming soon"
+            >
+              <div className="flex items-center justify-between">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-sage-soft/40 text-teal/70">
+                  <ComingSoonIcon kind={c.icon} />
                 </span>
+                <span className="rounded-full bg-teal/10 px-2.5 py-0.5 text-[0.6rem] font-bold uppercase tracking-wide text-teal/70">
+                  Soon
+                </span>
+              </div>
+              <h3 className="mt-3 text-[0.98rem] font-semibold leading-snug text-teal/80">{c.title}</h3>
+              <p className="mt-1.5 flex-1 text-[0.84rem] leading-relaxed text-ink/55">{c.body}</p>
+              <div className="mt-4 flex items-center gap-1.5 text-teal/45">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <rect x="5" y="11" width="14" height="9" rx="2" stroke="currentColor" strokeWidth="1.8" />
+                  <path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                </svg>
+                <span className="text-[0.7rem] font-semibold uppercase tracking-wide">Not yet available</span>
               </div>
             </div>
           ))}
@@ -548,8 +555,9 @@ function Field({ label, value }: { label: string; value: string }) {
 
 function LeafIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M12 20s8-3 8-11V5h-4c-8 0-8 8-8 8 0-4-3-5-3-5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M19 5c0 8-5.4 13-13 13 0-8 5.4-13 13-13Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+      <path d="M7 17C10 13 13 10 17 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
     </svg>
   );
 }
