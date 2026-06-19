@@ -7,7 +7,7 @@ const NAV = ["Features", "How it works", "For families", "Pricing", "Resources"]
 
 export default function Home() {
   return (
-    <div className="flex flex-col min-h-screen bg-cream">
+    <div className="flex flex-col min-h-screen overflow-x-hidden bg-cream">
       <SiteNav />
       <main className="flex-1">
         <Hero />
@@ -58,7 +58,7 @@ function Hero() {
       <div className="mx-auto max-w-6xl px-5 pt-14 pb-20 grid lg:grid-cols-2 gap-12 items-center">
         <div>
           <p className="eyebrow">Support for the moments that matter most</p>
-          <h1 className="mt-5 text-5xl sm:text-6xl leading-[1.02] font-semibold">
+          <h1 className="mt-5 text-[2.6rem] leading-[1.05] sm:text-5xl lg:text-6xl sm:leading-[1.02] font-semibold">
             More confidence.
             <br />
             Calmer parenting.
@@ -151,7 +151,7 @@ function ValueStrip() {
         {/* diffused radiance — soft blurred colored aura bleeding out from behind the card */}
         <div
           aria-hidden="true"
-          className="absolute -inset-7 -z-10 rounded-[3rem]"
+          className="absolute -inset-y-7 inset-x-0 -z-10 rounded-[3rem]"
           style={{
             background: "linear-gradient(120deg, #e6b566, #e1785c 50%, #8fb09a)",
             filter: "blur(38px)",
