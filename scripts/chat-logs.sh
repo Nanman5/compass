@@ -3,7 +3,7 @@
 #
 # Next.js 16 dev writes a JSON-lines log that captures BOTH server and browser console
 # output to .next/dev/logs/next-development.log. This filters it to the chat/voice/tool
-# lines (and any error/warn) and pretty-prints them, so you (or the assistant) can troubleshoot
+# lines (and any error/warn) and pretty-prints them so you can troubleshoot
 # the text and voice onboarding flows in one place.
 #
 # Usage:  ./scripts/chat-logs.sh            (follow live)
