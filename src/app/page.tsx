@@ -116,49 +116,57 @@ function HeroScene() {
 /* ─────────────────────────────────────────── Value strip */
 const VALUES = [
   {
-    title: "Guidance that knows your child",
-    body: "Compass learns your child and your values, then gives you real options in the moment — not just the tablet.",
+    title: "Personalized guidance",
+    body: "Advice that fits your child, your values, and your everyday life.",
     img: "/img/value-guidance.png",
+    tint: "#d7e6da", // mint
   },
   {
-    title: "One clear next step",
-    body: "Overwhelming advice becomes a single doable action — including when tech helps and when to put the screen away.",
+    title: "Practical next steps",
+    body: "Small, doable actions you can try right away — no overwhelm.",
     img: "/img/value-steps.png",
+    tint: "#f6dcd2", // soft coral
   },
   {
-    title: "Grows with your family",
-    body: "It remembers what actually works and gets sharper every week, growing right alongside your child.",
+    title: "Grow with your child",
+    body: "Tools and insights that evolve as your child does too.",
     img: "/img/value-grow.png",
+    tint: "#f6e7c4", // soft gold
   },
 ];
 
 function ValueStrip() {
   return (
-    <section className="mx-auto max-w-6xl px-5 -mt-6 pb-8">
-      <div className="grid sm:grid-cols-3 gap-4">
-        {VALUES.map((v) => (
-          <div
-            key={v.title}
-            className="bg-cream-card rounded-2xl p-6 transition-shadow"
-            style={{
-              border: "1px solid rgba(230,181,102,0.4)",
-              boxShadow:
-                "0 0 22px -4px rgba(230,181,102,0.45), 0 0 40px -10px rgba(225,120,92,0.25), 0 10px 30px -16px rgba(62,58,52,0.25)",
-            }}
-          >
-            <div className="w-14 h-14 rounded-2xl overflow-hidden border border-teal/10">
-              <Image
-                src={v.img}
-                alt=""
-                width={128}
-                height={128}
-                className="w-full h-full object-cover"
-              />
+    <section className="mx-auto max-w-6xl px-5 -mt-8 pb-10">
+      {/* radiant border: warm gradient ring + soft outer glow */}
+      <div
+        className="rounded-[1.9rem] p-[1.6px]"
+        style={{
+          background: "linear-gradient(120deg, #e6b566 0%, #e1785c 45%, #8fb09a 100%)",
+          boxShadow:
+            "0 0 0 1px rgba(230,181,102,0.25), 0 10px 28px -10px rgba(225,120,92,0.28), 0 0 46px -8px rgba(230,181,102,0.5)",
+        }}
+      >
+        <div className="rounded-[1.8rem] bg-cream-card grid sm:grid-cols-3 sm:divide-x divide-teal/10 overflow-hidden">
+          {VALUES.map((v) => (
+            <div key={v.title} className="p-6 sm:p-7">
+              <div
+                className="w-14 h-14 rounded-full overflow-hidden grid place-items-center"
+                style={{ background: v.tint }}
+              >
+                <Image
+                  src={v.img}
+                  alt=""
+                  width={128}
+                  height={128}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <h3 className="mt-4 text-lg font-semibold">{v.title}</h3>
+              <p className="mt-1.5 text-sm text-ink/70 leading-relaxed">{v.body}</p>
             </div>
-            <h3 className="mt-4 text-lg font-semibold">{v.title}</h3>
-            <p className="mt-1.5 text-sm text-ink/70 leading-relaxed">{v.body}</p>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </section>
   );
