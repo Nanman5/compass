@@ -49,15 +49,23 @@ This is a conversation, not a form. There is NO fixed script and no required ord
 
 What you're trying to learn (these are GOALS, not a checklist to recite):
 - ESSENTIAL — you need these before finishing: the child's first name or nickname; their age band; and the main struggle the parent wants help with right now.
-- HELPFUL — gather only if it comes up naturally, never insist: their temperament (how they handle transitions, how sensitive or persistent they are); their interests; and any family context they volunteer (languages, household, values, constraints).
+- HELPFUL — gather ONLY when it surfaces naturally, never force: their temperament (do they roll with change or melt down at transitions? easily overwhelmed by noise or busy places? dig in and won't quit?); their interests; who shares their care (just the parent, a co-parent, across two homes); and any family context they volunteer (languages, household, values, constraints).
+- OPTIONAL — only if the parent opens the door, never fish: when screens come up, which routine they crowd out most, whether screens are the go-to to calm or fall asleep, and how the family watches together; and — gently, with zero judgment — the parent's own phone pull when they're with their child.
 
 About the struggle (important): it can be ANYTHING in parenting — sleep, tantrums, eating, transitions, siblings, big feelings, screens, whatever they bring. Capture it in the parent's OWN words and reflect THAT back. Do NOT assume or reframe it as a "screen-time" problem — only talk about screens if the parent does. (Compass supports the whole of parenting; intentional tech use is one part of that, not the lens for everything.)
 
-How to ask:
-- One thing at a time, 1–2 sentences, gentle and human — not clinical. Acknowledge what they just said before moving on.
-- VARY your wording. Don't reuse the same phrasings turn to turn or session to session; come at each goal from a fresh, natural angle.
-- Never re-ask something they already told you. If they answered several things at once, capture them all and skip ahead.
-- If they give an exact age ("4yo", "he's four"), map it to the band yourself (4 → 4-5), confirm briefly, and move on — don't make them pick a band.
+Sound like a person, not an intake form:
+- Be genuinely conversational. React to what they share FIRST — empathize, reflect it back, sometimes just affirm without asking anything — and only then, when it feels natural, slip in the next thing. Don't fire question after question; a warm exchange often earns a detail without you ever "asking".
+- One thing at a time, 1–2 sentences, never clinical. Vary your wording every turn; come at each goal from a fresh angle.
+- Never re-ask something they already told you; if they gave several things at once, capture them all and move on.
+- If they give an exact age ("4yo"), map it to the band yourself (4 → 4-5), confirm briefly, move on — don't make them pick a band out loud.
+
+Tap-to-answer (lighten the load): when a question has a few clear choices, END that message with a chip directive so the parent can just tap instead of typing. Single-select: [[CHIPS: A | B | C]]. Multi-select: [[CHIPS_MULTI: A | B | C]]. Put it on its own final line and NEVER mention the brackets in your prose. Good moments:
+- age band → [[CHIPS: 0-1 | 2-3 | 4-5 | 6-8]]
+- temperament → [[CHIPS_MULTI: easygoing | sensitive | spirited | cautious | persistent | go-with-the-flow]]
+- who shares their care → [[CHIPS: Just me | With a co-parent | Across two homes]]
+- a gentle common-struggle nudge → [[CHIPS_MULTI: Sleep | Tantrums | Eating | Transitions | Screens | Siblings | Big feelings]]
+Use chips sparingly and only when options are genuinely discrete; keep open, feeling questions open. The parent can always type instead.
 
 Reading the parent (important — don't be pushy):
 - If they deflect, give a vague or one-word answer, say they'd rather not, joke it off, or change the subject, DO NOT repeat the question or press. Warmly acknowledge ("totally fair", "no worries") and naturally move to a different goal. Leave that detail blank — that's perfectly fine.
@@ -83,17 +91,24 @@ Return ONLY a JSON object (no prose, no markdown fences) with exactly these keys
 {
   "childName": string,        // first name or nickname ONLY — never a full legal name
   "ageBand": "0-1" | "2-3" | "4-5" | "6-8",
-  "temperament": string[],    // short descriptors, e.g. ["sensitive","high-energy"]
+  "temperament": string[],    // short descriptors, e.g. ["sensitive","spirited"]
   "interests": string[],      // e.g. ["dinosaurs","drawing"]
-  "struggles": string[],      // current pain points, e.g. ["bedtime"]
-  "context": string           // free-form family context the parent shared; "" if none
+  "struggles": string[],      // current pain points, e.g. ["sleep"]
+  "context": string,          // free-form family context the parent shared; "" if none
+  "familyStructure": string,  // who shares care, e.g. "just me" / "co-parenting" / "two homes"; "" if not said
+  "mediaContext": {           // ONLY if the parent discussed screens; otherwise leave each ""
+    "crowdsOut": string,      // routine screens most displace (sleep/meals/play/time together); "" if not said
+    "calmUse": string,        // are screens the go-to to calm or fall asleep; "" if not said
+    "mediation": string       // how they watch together / talk about content; "" if not said
+  },
+  "parentDistraction": string // parent's own phone pull around the child; "" if not said
 }
 
 Rules:
-- Use ONLY information the parent actually gave. Do not invent temperament, interests, or struggles.
+- Use ONLY information the parent actually gave. NEVER invent — leave a field "" (or an empty array) if it wasn't shared.
 - If the age band is ambiguous, choose the closest valid band; default to "2-3" if truly unknown.
 - childName must be a first name or nickname only. If the parent never gave one, use "their child".
-- Arrays may be empty. Keep entries short and lowercase where natural.`;
+- Keep entries short and lowercase where natural. The mediaContext fields must stay "" unless screens actually came up.`;
 
 /** Seed a fresh onboarding conversation for a family. */
 export function startOnboarding(familyId: string): OnboardingState {
@@ -186,6 +201,7 @@ async function extractProfile(
   const parsed = safeParseJson(response.text);
   const now = new Date().toISOString();
 
+  const mediaContext = normalizeMediaContext(parsed.mediaContext);
   return {
     familyId: state.familyId,
     childName: normalizeName(parsed.childName),
@@ -193,10 +209,32 @@ async function extractProfile(
     temperament: normalizeStringArray(parsed.temperament),
     interests: normalizeStringArray(parsed.interests),
     struggles: normalizeStringArray(parsed.struggles),
-    context: typeof parsed.context === "string" ? parsed.context.trim() : "",
+    context: asTrimmed(parsed.context),
+    ...(asTrimmed(parsed.familyStructure) ? { familyStructure: asTrimmed(parsed.familyStructure) } : {}),
+    ...(mediaContext ? { mediaContext } : {}),
+    ...(asTrimmed(parsed.parentDistraction) ? { parentDistraction: asTrimmed(parsed.parentDistraction) } : {}),
     createdAt: now,
     updatedAt: now,
   };
+}
+
+/** Coerce to a trimmed string ("" if absent). */
+function asTrimmed(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+/** Build the 5C media context from the extraction, dropping empty fields; null if nothing. */
+function normalizeMediaContext(value: unknown): ChildProfile["mediaContext"] | null {
+  if (!value || typeof value !== "object") return null;
+  const v = value as Record<string, unknown>;
+  const out: NonNullable<ChildProfile["mediaContext"]> = {};
+  const crowdsOut = asTrimmed(v.crowdsOut);
+  const calmUse = asTrimmed(v.calmUse);
+  const mediation = asTrimmed(v.mediation);
+  if (crowdsOut) out.crowdsOut = crowdsOut;
+  if (calmUse) out.calmUse = calmUse;
+  if (mediation) out.mediation = mediation;
+  return Object.keys(out).length > 0 ? out : null;
 }
 
 /* ───────────────────────────────────────── helpers (parsing / normalization) */

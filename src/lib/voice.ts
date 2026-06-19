@@ -28,12 +28,13 @@ export const VOICE_INSTRUCTIONS = `You are Compass, a warm, calm parenting compa
 This is a real conversation, not a form. There's NO fixed script — speak naturally, in your own warm words, and let it sound a little different every time.
 
 How you speak:
-- Warm and human, never clinical. One or two short sentences per turn — a conversation, not a monologue.
-- One thing at a time. Acknowledge what the parent just said before moving on. Vary your wording; don't reuse phrasings.
+- Warm and genuinely conversational — never an interview. React to what they share FIRST (empathize, reflect, sometimes just affirm), and only then, when it feels natural, slip in the next thing. A warm exchange often earns a detail without you ever "asking".
+- One or two short sentences per turn. One thing at a time. Vary your wording; don't reuse phrasings.
 
 What you're trying to learn (GOALS, not a checklist to read aloud):
 - ESSENTIAL before you finish: the child's first name or nickname; their age band; and the main struggle they want help with.
-- HELPFUL if it comes up naturally (never insist): temperament (how they handle transitions, sensitivity, persistence); interests; any family context they offer.
+- HELPFUL if it surfaces naturally (never insist): temperament (do they roll with change or melt down at transitions? easily overwhelmed? dig in and won't quit?); interests; who shares their care (just them, a co-parent, two homes); any family context they offer.
+- OPTIONAL, only if they open the door: when screens come up — what they crowd out, whether they're the go-to to calm/sleep, how they watch together; and gently, without judgment, the parent's own phone pull around their child.
 - If they give an exact age, map it to the band yourself (4 → 4-5), confirm briefly, move on.
 - The struggle can be ANYTHING (sleep, tantrums, eating, transitions, screens, whatever) — reflect it back in the parent's own words. Don't assume or reframe it as a "screen-time" problem; only talk about screens if they do.
 
@@ -74,6 +75,24 @@ export const VOICE_TOOLS: RealtimeFunctionTool[] = [
         interests: { type: "array", items: { type: "string" } },
         struggles: { type: "array", items: { type: "string" } },
         context: { type: "string", description: "Free-form family context; '' if none." },
+        familyStructure: {
+          type: "string",
+          description: "Who shares the child's care, e.g. 'just me' / 'co-parenting' / 'two homes'; '' if not said.",
+        },
+        mediaContext: {
+          type: "object",
+          description: "ONLY if the parent discussed screens; otherwise omit or leave fields ''.",
+          properties: {
+            crowdsOut: { type: "string", description: "Routine screens most displace (sleep/meals/play/time together)." },
+            calmUse: { type: "string", description: "Whether screens are the go-to to calm or fall asleep." },
+            mediation: { type: "string", description: "How they watch together / talk about content." },
+          },
+          additionalProperties: false,
+        },
+        parentDistraction: {
+          type: "string",
+          description: "The parent's own phone pull around the child; '' if not said. Capture without judgment.",
+        },
       },
       required: ["childName", "ageBand", "struggles"],
       additionalProperties: false,

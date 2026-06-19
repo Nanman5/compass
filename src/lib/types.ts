@@ -21,11 +21,29 @@ export interface ChildProfile {
   /** First name or nickname only — COPPA data minimization, no full PII. */
   childName: string;
   ageBand: AgeBand;
-  temperament: string[]; // e.g. ["sensitive", "high-energy"]
+  /** Evidence-based temperament read (adaptability / sensory sensitivity / persistence),
+   *  captured as plain descriptors, e.g. ["sensitive", "spirited", "go-with-the-flow"]. */
+  temperament: string[];
   interests: string[]; // e.g. ["dinosaurs", "drawing"]
-  struggles: string[]; // current pain points, e.g. ["bedtime", "screen tantrums"]
+  struggles: string[]; // current pain points, e.g. ["bedtime", "tantrums"]
   /** Free-form family context the parent shared (languages, household, values, needs). */
   context: string;
+
+  /* ── Evidence-based dimensions (optional; gathered only when natural). ───────── */
+  /** Care structure — coparental consistency matters (TICS). e.g. "just me", "co-parenting". */
+  familyStructure?: string;
+  /** The "5 Cs" screen context — only what the parent volunteers. */
+  mediaContext?: {
+    /** Crowding-out: routines screens most displace (sleep, meals, play, time together). */
+    crowdsOut?: string;
+    /** Calm: whether screens are the go-to for soothing / falling asleep. */
+    calmUse?: string;
+    /** Communication: co-viewing / talking about content (mediation level). */
+    mediation?: string;
+  };
+  /** Parent's own device distraction around the child (DISRUPT), normalized & non-judgmental. */
+  parentDistraction?: string;
+
   createdAt: string; // ISO
   updatedAt: string; // ISO
 }

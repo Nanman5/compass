@@ -42,6 +42,21 @@ interface VisibleMessage {
   id: number;
   role: "assistant" | "user";
   text: string;
+  /** Tap-to-answer options the agent offered with this message (parsed from [[CHIPS…]]). */
+  chips?: { options: string[]; multi: boolean };
+}
+
+/** Pull a [[CHIPS: a | b]] (single) or [[CHIPS_MULTI: a | b]] (multi) directive out of a
+ *  reply, returning the cleaned text and the parsed options so the brackets never show. */
+function parseChips(reply: string): { text: string; chips?: VisibleMessage["chips"] } {
+  const m = reply.match(/\[\[CHIPS(_MULTI)?:\s*([^\]]+)\]\]/i);
+  if (!m) return { text: reply };
+  const options = m[2]
+    .split("|")
+    .map((o) => o.trim())
+    .filter(Boolean);
+  const text = reply.replace(m[0], "").trim();
+  return { text, chips: options.length ? { options, multi: Boolean(m[1]) } : undefined };
 }
 
 interface OnboardingApiResponse {
@@ -80,9 +95,12 @@ export default function OnboardingChat() {
   const scrollRef = useRef<HTMLElement>(null);
   const didInit = useRef(false);
 
-  const pushMessage = useCallback((role: VisibleMessage["role"], text: string) => {
-    setMessages((prev) => [...prev, { id: nextId.current++, role, text }]);
-  }, []);
+  const pushMessage = useCallback(
+    (role: VisibleMessage["role"], text: string, chips?: VisibleMessage["chips"]) => {
+      setMessages((prev) => [...prev, { id: nextId.current++, role, text, chips }]);
+    },
+    [],
+  );
 
   /** One round-trip to the onboarding API. Returns the parsed response or throws. */
   const turn = useCallback(async (message: string): Promise<OnboardingApiResponse> => {
@@ -107,7 +125,8 @@ export default function OnboardingChat() {
 
   const applyResponse = useCallback((data: OnboardingApiResponse) => {
     serverState.current = data.state;
-    pushMessage("assistant", data.reply);
+    const { text, chips } = parseChips(data.reply);
+    pushMessage("assistant", text, chips);
     if (data.done) {
       setDone(true);
       if (data.profile) setProfile(data.profile);
@@ -167,22 +186,25 @@ export default function OnboardingChat() {
     return () => cancelAnimationFrame(id);
   }, [messages, pending, done]);
 
-  const send = useCallback(async () => {
-    const text = input.trim();
-    if (!text || pending || done) return;
-    setInput("");
-    setError(null);
-    pushMessage("user", text);
-    setPending(true);
-    try {
-      const data = await turn(text);
-      applyResponse(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't reach Compass");
-    } finally {
-      setPending(false);
-    }
-  }, [input, pending, done, pushMessage, turn, applyResponse]);
+  const send = useCallback(
+    async (override?: string) => {
+      const text = (override ?? input).trim();
+      if (!text || pending || done) return;
+      setInput("");
+      setError(null);
+      pushMessage("user", text);
+      setPending(true);
+      try {
+        const data = await turn(text);
+        applyResponse(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Couldn't reach Compass");
+      } finally {
+        setPending(false);
+      }
+    },
+    [input, pending, done, pushMessage, turn, applyResponse],
+  );
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -227,6 +249,20 @@ export default function OnboardingChat() {
                   <UserBubble key={m.id} text={m.text} />
                 ),
               )}
+
+              {(() => {
+                const last = messages[messages.length - 1];
+                if (!pending && !error && last?.role === "assistant" && last.chips) {
+                  return (
+                    <ChipPicker
+                      key={last.id}
+                      chips={last.chips}
+                      onSend={(v) => void send(v)}
+                    />
+                  );
+                }
+                return null;
+              })()}
 
               {pending && <TypingBubble />}
               {error && <ErrorBubble text={error} onRetry={() => void send()} />}
@@ -349,6 +385,64 @@ function ErrorBubble({ text, onRetry }: { text: string; onRetry: () => void }) {
   );
 }
 
+/* ───────────────────────────────────────── tap-to-answer chips */
+
+function ChipPicker({
+  chips,
+  onSend,
+}: {
+  chips: NonNullable<VisibleMessage["chips"]>;
+  onSend: (value: string) => void;
+}) {
+  const [selected, setSelected] = useState<string[]>([]);
+  const base =
+    "rounded-full border px-4 py-2 text-sm font-semibold transition active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal";
+
+  if (!chips.multi) {
+    return (
+      <div className="msg-in flex flex-wrap gap-2 pl-9">
+        {chips.options.map((o) => (
+          <button
+            key={o}
+            onClick={() => onSend(o)}
+            className={`${base} border-teal/25 bg-cream-card/70 text-teal hover:border-teal hover:bg-teal/5`}
+          >
+            {o}
+          </button>
+        ))}
+      </div>
+    );
+  }
+
+  const toggle = (o: string) =>
+    setSelected((s) => (s.includes(o) ? s.filter((x) => x !== o) : [...s, o]));
+
+  return (
+    <div className="msg-in flex flex-wrap items-center gap-2 pl-9">
+      {chips.options.map((o) => {
+        const on = selected.includes(o);
+        return (
+          <button
+            key={o}
+            onClick={() => toggle(o)}
+            aria-pressed={on}
+            className={`${base} ${on ? "border-teal bg-teal text-cream" : "border-teal/25 bg-cream-card/70 text-teal hover:border-teal hover:bg-teal/5"}`}
+          >
+            {o}
+          </button>
+        );
+      })}
+      <button
+        onClick={() => onSend(selected.join(", "))}
+        disabled={selected.length === 0}
+        className="rounded-full bg-coral px-5 py-2 text-sm font-bold text-cream shadow-[var(--shadow-card)] transition hover:bg-coral-deep active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        Continue
+      </button>
+    </div>
+  );
+}
+
 /* ───────────────────────────────────────── composer (wet-glass input) */
 
 function Composer({
@@ -453,10 +547,19 @@ function Recap({ profile }: { profile: ChildProfile }) {
     ["Age", profile.ageBand],
     ["Loves", profile.interests.join(", ") || "—"],
   ];
+  if (profile.familyStructure) left.push(["Care", profile.familyStructure]);
   const right: [string, string][] = [
     ["Temperament", profile.temperament.join(", ") || "—"],
     ["Working on", profile.struggles.join(", ") || "—"],
   ];
+
+  // Optional evidence-based notes (only what the parent shared).
+  const mc = profile.mediaContext;
+  const notes: [string, string][] = [];
+  if (mc?.crowdsOut) notes.push(["Screens crowd out", mc.crowdsOut]);
+  if (mc?.calmUse) notes.push(["Screens to calm", mc.calmUse]);
+  if (mc?.mediation) notes.push(["Watching together", mc.mediation]);
+  if (profile.parentDistraction) notes.push(["Your own phone pull", profile.parentDistraction]);
 
   return (
     <div className="msg-in space-y-8">
@@ -493,6 +596,16 @@ function Recap({ profile }: { profile: ChildProfile }) {
                 ))}
               </dl>
             </div>
+            {notes.length > 0 && (
+              <dl className="mt-5 space-y-2 border-t border-teal/15 pt-4">
+                {notes.map(([k, v]) => (
+                  <div key={k} className="flex flex-wrap gap-x-2 text-sm">
+                    <dt className="font-semibold text-teal/70">{k}:</dt>
+                    <dd className="text-ink/75">{v}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
           </div>
         </div>
       </div>

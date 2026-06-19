@@ -35,6 +35,9 @@ export async function POST(req: Request): Promise<Response> {
   }
 
   const now = new Date().toISOString();
+  const familyStructure = asTrimmed(b.familyStructure);
+  const parentDistraction = asTrimmed(b.parentDistraction);
+  const mediaContext = normalizeMediaContext(b.mediaContext);
   const profile: ChildProfile = {
     familyId,
     childName: normalizeName(b.childName),
@@ -42,7 +45,10 @@ export async function POST(req: Request): Promise<Response> {
     temperament: normalizeStringArray(b.temperament),
     interests: normalizeStringArray(b.interests),
     struggles: normalizeStringArray(b.struggles),
-    context: typeof b.context === "string" ? b.context.trim() : "",
+    context: asTrimmed(b.context),
+    ...(familyStructure ? { familyStructure } : {}),
+    ...(mediaContext ? { mediaContext } : {}),
+    ...(parentDistraction ? { parentDistraction } : {}),
     createdAt: now,
     updatedAt: now,
   };
@@ -55,6 +61,23 @@ export async function POST(req: Request): Promise<Response> {
     console.error("[profile] save failed:", err);
     return NextResponse.json({ error: "Failed to save profile" }, { status: 500 });
   }
+}
+
+function asTrimmed(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function normalizeMediaContext(value: unknown): ChildProfile["mediaContext"] | null {
+  if (!value || typeof value !== "object") return null;
+  const v = value as Record<string, unknown>;
+  const out: NonNullable<ChildProfile["mediaContext"]> = {};
+  const crowdsOut = asTrimmed(v.crowdsOut);
+  const calmUse = asTrimmed(v.calmUse);
+  const mediation = asTrimmed(v.mediation);
+  if (crowdsOut) out.crowdsOut = crowdsOut;
+  if (calmUse) out.calmUse = calmUse;
+  if (mediation) out.mediation = mediation;
+  return Object.keys(out).length > 0 ? out : null;
 }
 
 function normalizeName(value: unknown): string {
