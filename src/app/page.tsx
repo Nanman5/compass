@@ -1,15 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import { CompassStar, CompassWordmark } from "@/components/CompassStar";
-import {
-  HangingPlant,
-  FramedNote,
-  FramedLeaf,
-  Sparkles,
-  Squiggle,
-  HeartDoodle,
-  Underline,
-} from "@/components/HeroDecor";
 
 const NAV = ["Features", "How it works", "For families", "For partners", "Pricing"];
 
@@ -60,10 +51,11 @@ function Hero() {
     <section className="relative overflow-hidden">
       <div className="mx-auto max-w-6xl px-5 pt-14 pb-20 grid lg:grid-cols-2 gap-12 items-center">
         <div>
-          <p className="eyebrow relative inline-flex items-center gap-2">
-            Support for the moments that matter most <HeartDoodle size={18} />
-            <Underline className="absolute -bottom-2 left-0 w-64 h-3" color="#e1785c" />
-          </p>
+          <div>
+            <p className="eyebrow">Support for the moments that matter most</p>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/decor/heart_divider.svg" alt="" aria-hidden className="mt-1 w-72 h-auto" />
+          </div>
           <h1 className="mt-4 text-5xl sm:text-6xl leading-[1.02] font-semibold">
             More confidence.
             <br />
@@ -103,12 +95,15 @@ function HeroScene() {
         className="relative z-0 w-[94%] ml-auto h-auto"
       />
 
-      {/* hand-drawn SVG decorations (from HeroDecor) floating around the scene */}
-      <HangingPlant className="absolute -top-2 right-0 w-20 md:w-24 z-20" />
-      <FramedNote className="absolute top-0 right-[34%] w-24 md:w-28 rotate-[-5deg] z-20" />
-      <FramedLeaf className="absolute top-7 right-[15%] w-20 md:w-24 rotate-[4deg] z-20" />
-      <Sparkles className="absolute left-[2%] top-[16%] w-20 z-20" />
-      <Squiggle className="absolute left-0 bottom-3 w-24 z-20" color="#8fb09a" />
+      {/* hand-drawn SVG decorations (user-provided) floating around the scene */}
+      {/* eslint-disable @next/next/no-img-element */}
+      <img src="/decor/hanging_plant.svg" alt="" aria-hidden className="absolute -top-4 right-0 w-16 md:w-20 z-20" />
+      <img src="/decor/frame_doing_great.svg" alt="" aria-hidden className="absolute top-0 right-[33%] w-20 md:w-24 rotate-[-5deg] z-20" />
+      <img src="/decor/frame_botanical.svg" alt="" aria-hidden className="absolute top-8 right-[14%] w-16 md:w-20 rotate-[4deg] z-20" />
+      <img src="/decor/star.svg" alt="" aria-hidden className="absolute left-[3%] top-[14%] w-8 z-20" />
+      <img src="/decor/star.svg" alt="" aria-hidden className="absolute left-[12%] bottom-[16%] w-5 opacity-80 z-20" />
+      <img src="/decor/star.svg" alt="" aria-hidden className="absolute right-[44%] top-[6%] w-4 opacity-70 z-20" />
+      {/* eslint-enable @next/next/no-img-element */}
     </div>
   );
 }

@@ -1,0 +1,40 @@
+<svg viewBox="394 146 240 316" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<defs>
+  <linearGradient id="woodGrad2" x1="0" y1="0" x2="1" y2="0.8">
+    <stop offset="0" stop-color="#D0C0A3"/><stop offset="1" stop-color="#A7936E"/>
+  </linearGradient>
+  <linearGradient id="matGrad" x1="0" y1="0" x2="0.3" y2="1">
+    <stop offset="0" stop-color="#FDFAF3"/><stop offset="1" stop-color="#F3EDDF"/>
+  </linearGradient>
+  <linearGradient id="sageMat" x1="0" y1="0" x2="0.4" y2="1">
+    <stop offset="0" stop-color="#E6EAD9"/><stop offset="1" stop-color="#D3DAC3"/>
+  </linearGradient>
+  <filter id="wc" x="-12%" y="-12%" width="124%" height="124%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.013 0.016" numOctaves="3" seed="7" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="5" xChannelSelector="R" yChannelSelector="G"/></filter><filter id="wcStrong" x="-20%" y="-20%" width="140%" height="140%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.02 0.025" numOctaves="3" seed="3" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="8" xChannelSelector="R" yChannelSelector="G"/></filter><filter id="soft"><feGaussianBlur stdDeviation="3"/></filter>
+</defs>
+<g transform="rotate(0.8 512 300)">
+  <rect x="404" y="158" width="226" height="298" rx="6" fill="#000" opacity="0.06" filter="url(#soft)"/>
+  <rect x="398" y="150" width="226" height="298" rx="5" fill="url(#woodGrad2)" filter="url(#wc)"/>
+  <rect x="410" y="162" width="202" height="274" rx="3" fill="none" stroke="#9C8867" stroke-width="1.5" opacity="0.6"/>
+  <rect x="420" y="172" width="182" height="254" rx="2" fill="url(#matGrad)" filter="url(#wc)"/>
+  <rect x="448" y="200" width="126" height="198" rx="2" fill="url(#sageMat)" filter="url(#wc)"/>
+  <rect x="448" y="200" width="126" height="198" rx="2" fill="none" stroke="#B7C2A4" stroke-width="2" opacity="0.7"/>
+  <g transform="translate(511 372)" filter="url(#wcStrong)">
+    <path d="M0 0 C-1 -40 -1 -90 0 -150" fill="none" stroke="#6E8B5E" stroke-width="4.5" stroke-linecap="round"/>
+    <path d="M0 -36 C-22 -40 -40 -54 -44 -74 C-22 -72 -6 -58 0 -42 Z" fill="#8AA479"/>
+    <path d="M0 -36 C22 -40 40 -54 44 -74 C22 -72 6 -58 0 -42 Z" fill="#7C9869"/>
+    <path d="M0 -72 C-20 -76 -36 -90 -40 -108 C-20 -106 -6 -92 0 -78 Z" fill="#7C9869"/>
+    <path d="M0 -72 C20 -76 36 -90 40 -108 C20 -106 6 -92 0 -78 Z" fill="#8AA479"/>
+    <path d="M0 -106 C-16 -110 -30 -122 -34 -138 C-16 -136 -5 -124 0 -112 Z" fill="#8AA479"/>
+    <path d="M0 -106 C16 -110 30 -122 34 -138 C16 -136 5 -124 0 -112 Z" fill="#7C9869"/>
+    <path d="M0 -132 C-9 -140 -8 -158 0 -168 C8 -158 9 -140 0 -132 Z" fill="#8AA479"/>
+    <g stroke="#5E7B49" stroke-width="1.2" stroke-opacity="0.5" fill="none">
+      <path d="M0 -40 C-14 -48 -28 -58 -40 -72"/><path d="M0 -40 C14 -48 28 -58 40 -72"/>
+      <path d="M0 -76 C-12 -84 -24 -94 -36 -106"/><path d="M0 -76 C12 -84 24 -94 36 -106"/>
+    </g>
+  </g>
+</g>
+</svg>

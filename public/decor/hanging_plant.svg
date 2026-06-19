@@ -1,0 +1,96 @@
+<svg viewBox="558 136 308 630" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<defs>
+  <linearGradient id="potGrad" x1="0" y1="0" x2="0.2" y2="1">
+    <stop offset="0" stop-color="#CD8B5F"/><stop offset="0.55" stop-color="#BA7448"/><stop offset="1" stop-color="#9B5B36"/>
+  </linearGradient>
+  <linearGradient id="potRim" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#D59B6F"/><stop offset="1" stop-color="#B16B41"/>
+  </linearGradient>
+  <radialGradient id="leafGrad" cx="0.35" cy="0.3" r="0.85">
+    <stop offset="0" stop-color="#88A473"/><stop offset="1" stop-color="#5F7C4A"/>
+  </radialGradient>
+  <radialGradient id="leafGradL" cx="0.35" cy="0.3" r="0.85">
+    <stop offset="0" stop-color="#9FB787"/><stop offset="1" stop-color="#74905C"/>
+  </radialGradient>
+  <radialGradient id="crownDark" cx="0.4" cy="0.35" r="0.8">
+    <stop offset="0" stop-color="#5E7B49"/><stop offset="1" stop-color="#46613A"/>
+  </radialGradient>
+  <filter id="wc" x="-12%" y="-12%" width="124%" height="124%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.013 0.016" numOctaves="3" seed="7" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="5" xChannelSelector="R" yChannelSelector="G"/></filter><filter id="wcStrong" x="-20%" y="-20%" width="140%" height="140%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.02 0.025" numOctaves="3" seed="3" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="8" xChannelSelector="R" yChannelSelector="G"/></filter>
+  <symbol id="vleaf" viewBox="0 0 60 76">
+    <path d="M30 74 C12 56 2 40 4 24 C6 9 18 2 30 12 C42 2 54 9 56 24 C58 40 48 56 30 74 Z" fill="url(#leafGrad)" stroke="#3F5730" stroke-width="1.2" stroke-opacity="0.5"/>
+    <path d="M30 70 C29 52 29 32 30 14" fill="none" stroke="#3F5730" stroke-width="1.3" stroke-opacity="0.55" stroke-linecap="round"/>
+    <path d="M30 56 C24 50 19 44 16 38 M30 56 C36 50 41 44 44 38 M30 42 C26 38 22 34 20 30 M30 42 C34 38 38 34 40 30" fill="none" stroke="#3F5730" stroke-width="0.8" stroke-opacity="0.4"/>
+    <path d="M22 22 C26 16 34 16 38 22 C40 28 36 34 30 38 C24 34 20 28 22 22 Z" fill="#9DB585" fill-opacity="0.45"/>
+  </symbol>
+  <symbol id="cleaf" viewBox="0 0 70 50">
+    <path d="M2 25 C14 6 40 2 66 18 C50 30 22 40 2 25 Z" fill="url(#leafGrad)" stroke="#415A31" stroke-width="1" stroke-opacity="0.45"/>
+    <path d="M6 25 C26 22 46 21 62 19" fill="none" stroke="#415A31" stroke-width="1" stroke-opacity="0.5"/>
+  </symbol>
+  <symbol id="cleafL" viewBox="0 0 70 50">
+    <path d="M2 25 C14 6 40 2 66 18 C50 30 22 40 2 25 Z" fill="url(#leafGradL)" stroke="#54724A" stroke-width="1" stroke-opacity="0.4"/>
+    <path d="M6 25 C26 22 46 21 62 19" fill="none" stroke="#4E6B3C" stroke-width="1" stroke-opacity="0.45"/>
+  </symbol>
+</defs>
+<g>
+  <g stroke="#B49773" stroke-width="2.6" fill="none" stroke-linecap="round" opacity="0.9">
+    <circle cx="731" cy="150" r="7" fill="#B49773" stroke="none"/>
+    <path d="M731 157 C710 200 690 250 686 282"/><path d="M731 157 C752 200 772 250 776 282"/>
+    <path d="M731 157 C724 205 720 255 718 286"/><path d="M731 157 C738 205 742 255 744 286"/>
+    <path d="M686 282 C700 292 762 292 776 282" stroke-width="2"/>
+  </g>
+  <path d="M676 286 C672 300 686 360 700 376 C726 392 762 388 784 372 C800 360 808 300 800 286 Z" fill="url(#potGrad)" filter="url(#wc)"/>
+  <path d="M668 282 C668 268 690 260 738 260 C786 260 808 268 808 282 C808 296 786 304 738 304 C690 304 668 296 668 282 Z" fill="url(#potRim)" filter="url(#wc)"/>
+  <ellipse cx="738" cy="282" rx="62" ry="11" fill="#7E4A2C" opacity="0.45"/>
+  <path d="M770 300 C782 320 784 350 778 368" fill="none" stroke="#8A5030" stroke-width="6" stroke-opacity="0.3" stroke-linecap="round"/>
+  <path d="M604 268 C600 226 648 196 712 196 C776 196 822 226 818 266 C814 296 762 310 712 310 C662 310 608 298 604 268 Z" fill="url(#crownDark)" filter="url(#wcStrong)"/>
+  <g filter="url(#wcStrong)">
+    <use href="#cleaf"  x="588" y="236" width="92" height="64" transform="rotate(-22 634 268)"/>
+    <use href="#cleafL" x="600" y="208" width="84" height="60" transform="rotate(-34 642 238)"/>
+    <use href="#cleaf"  x="624" y="190" width="84" height="60" transform="rotate(-50 666 220)"/>
+    <use href="#cleafL" x="660" y="180" width="82" height="58" transform="rotate(-12 701 209)"/>
+    <use href="#cleaf"  x="700" y="182" width="86" height="60" transform="rotate(16 743 212)"/>
+    <use href="#cleafL" x="736" y="194" width="86" height="60" transform="rotate(36 779 224)"/>
+    <use href="#cleaf"  x="756" y="222" width="84" height="58" transform="rotate(54 798 251)"/>
+    <use href="#cleafL" x="632" y="232" width="84" height="60" transform="rotate(-6 674 262)"/>
+    <use href="#cleaf"  x="678" y="222" width="88" height="62" transform="rotate(6 722 253)"/>
+    <use href="#cleafL" x="716" y="226" width="84" height="60" transform="rotate(24 758 256)"/>
+    <use href="#cleaf"  x="608" y="256" width="76" height="54" transform="rotate(8 646 283)"/>
+    <use href="#cleafL" x="740" y="252" width="78" height="56" transform="rotate(-14 779 280)"/>
+    <use href="#cleaf"  x="660" y="250" width="84" height="58" transform="rotate(-2 702 279)"/>
+    <use href="#cleafL" x="700" y="252" width="82" height="58" transform="rotate(14 741 281)"/>
+  </g>
+  <g fill="#A8C08C" opacity="0.5">
+    <ellipse cx="680" cy="222" rx="14" ry="8" transform="rotate(-20 680 222)"/>
+    <ellipse cx="740" cy="226" rx="13" ry="7" transform="rotate(18 740 226)"/>
+    <ellipse cx="712" cy="248" rx="12" ry="7"/>
+  </g>
+  <g filter="url(#wc)">
+    <path d="M772 370 C786 420 790 480 776 540 C766 590 752 650 756 712" fill="none" stroke="#5E7B49" stroke-width="3" stroke-opacity="0.7"/>
+    <use href="#vleaf" x="760" y="392" width="42" height="53" transform="rotate(20 781 418)"/>
+    <use href="#vleaf" x="776" y="438" width="40" height="51" transform="rotate(40 796 463)"/>
+    <use href="#vleaf" x="766" y="486" width="44" height="56" transform="rotate(8 788 514)"/>
+    <use href="#vleaf" x="752" y="536" width="42" height="53" transform="rotate(-14 773 562)"/>
+    <use href="#vleaf" x="744" y="588" width="46" height="58" transform="rotate(6 767 617)"/>
+    <use href="#vleaf" x="738" y="642" width="44" height="56" transform="rotate(-8 760 670)"/>
+    <use href="#vleaf" x="742" y="690" width="42" height="53" transform="rotate(14 763 716)"/>
+  </g>
+  <g filter="url(#wc)">
+    <path d="M700 380 C690 430 686 486 698 540 C706 580 712 624 706 668" fill="none" stroke="#5E7B49" stroke-width="2.6" stroke-opacity="0.65"/>
+    <use href="#vleaf" x="676" y="400" width="40" height="51" transform="rotate(-22 696 425)"/>
+    <use href="#vleaf" x="672" y="448" width="42" height="53" transform="rotate(-8 693 474)"/>
+    <use href="#vleaf" x="678" y="498" width="40" height="51" transform="rotate(10 698 523)"/>
+    <use href="#vleaf" x="686" y="548" width="42" height="53" transform="rotate(-6 707 574)"/>
+    <use href="#vleaf" x="684" y="600" width="40" height="51" transform="rotate(12 704 625)"/>
+  </g>
+  <g filter="url(#wc)" opacity="0.95">
+    <path d="M800 372 C816 410 822 452 816 494" fill="none" stroke="#5E7B49" stroke-width="2.4" stroke-opacity="0.6"/>
+    <use href="#vleaf" x="800" y="392" width="38" height="48" transform="rotate(28 819 416)"/>
+    <use href="#vleaf" x="806" y="436" width="40" height="51" transform="rotate(14 826 461)"/>
+    <use href="#vleaf" x="800" y="482" width="38" height="48" transform="rotate(-6 819 506)"/>
+  </g>
+</g>
+</svg>

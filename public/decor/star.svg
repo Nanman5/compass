@@ -1,0 +1,14 @@
+<svg viewBox="464 58 82 80" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<defs>
+  <radialGradient id="starGrad" cx="0.4" cy="0.35" r="0.8">
+    <stop offset="0" stop-color="#F3D687"/><stop offset="0.6" stop-color="#E7C065"/><stop offset="1" stop-color="#D6A748"/>
+  </radialGradient>
+  <filter id="wc" x="-12%" y="-12%" width="124%" height="124%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.013 0.016" numOctaves="3" seed="7" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="5" xChannelSelector="R" yChannelSelector="G"/></filter>
+</defs>
+<g transform="translate(505 98) rotate(-6)">
+  <path d="M0 -34 C4 -14 8 -10 30 -10 C12 0 8 4 12 28 C2 14 -2 14 -12 28 C-8 4 -12 0 -30 -10 C-8 -10 -4 -14 0 -34 Z" fill="url(#starGrad)" stroke="#C99A40" stroke-width="1.4" stroke-opacity="0.6" filter="url(#wc)"/>
+  <ellipse cx="-6" cy="-8" rx="7" ry="5" fill="#FBEBBE" opacity="0.6"/>
+</g>
+</svg>
