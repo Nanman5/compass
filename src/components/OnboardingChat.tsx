@@ -75,7 +75,7 @@ export default function OnboardingChat() {
   const familyId = useRef<string>("");
   const serverState = useRef<OnboardingState | null>(null);
   const nextId = useRef(0);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLElement>(null);
 
   const pushMessage = useCallback((role: VisibleMessage["role"], text: string) => {
     setMessages((prev) => [...prev, { id: nextId.current++, role, text }]);
@@ -125,9 +125,11 @@ export default function OnboardingChat() {
     };
   }, [turn, applyResponse]);
 
-  // Keep the latest message in view as the conversation grows.
+  // Follow the conversation: smoothly scroll the message pane to the bottom as it grows.
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
   }, [messages, pending, done]);
 
   const send = useCallback(async () => {
@@ -155,18 +157,23 @@ export default function OnboardingChat() {
   };
 
   return (
-    <div className="relative min-h-dvh w-full overflow-hidden bg-cream">
+    <div className="relative h-dvh w-full overflow-hidden bg-cream">
       {/* living ambient backdrop */}
       <div className="aurora" aria-hidden="true">
         <div className="blob blob-coral" />
         <div className="blob blob-teal" />
         <div className="blob blob-gold" />
+        <div className="blob blob-rose" />
       </div>
 
-      <div className="relative z-10 mx-auto flex min-h-dvh max-w-2xl flex-col px-4 sm:px-6">
+      <div className="relative z-10 mx-auto flex h-dvh max-w-2xl flex-col px-4 sm:px-6">
         <Presence thinking={pending} done={done} />
 
-        <main className="flex-1 space-y-4 pb-4" aria-live="polite">
+        <main
+          ref={scrollRef}
+          className="flex-1 space-y-4 overflow-y-auto overscroll-contain scroll-smooth pb-4 pt-1"
+          aria-live="polite"
+        >
           {messages.map((m) =>
             m.role === "assistant" ? (
               <AssistantBubble key={m.id} text={m.text} />
@@ -178,8 +185,6 @@ export default function OnboardingChat() {
           {pending && <TypingBubble />}
           {error && <ErrorBubble text={error} onRetry={() => void send()} />}
           {done && profile && <Recap profile={profile} />}
-
-          <div ref={bottomRef} />
         </main>
 
         {!done && (
@@ -200,7 +205,7 @@ export default function OnboardingChat() {
 
 function Presence({ thinking, done }: { thinking: boolean; done: boolean }) {
   return (
-    <header className="flex flex-col items-center gap-1.5 pt-8 pb-6 text-center">
+    <header className="flex shrink-0 flex-col items-center gap-1.5 pt-8 pb-6 text-center">
       <div className={done ? "" : "compass-breathe"}>
         <Image
           src={MARK_COLOR}
@@ -308,7 +313,7 @@ function Composer({
   }, [value]);
 
   return (
-    <div className="sticky bottom-0 pb-5 pt-2">
+    <div className="shrink-0 pb-5 pt-2">
       <div className="composer glass flex items-end gap-2 rounded-[1.6rem] p-2 pl-5">
         <label htmlFor="reply" className="sr-only">
           Your reply

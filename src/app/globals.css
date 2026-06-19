@@ -97,24 +97,42 @@ h1, h2, h3, h4 {
    "wet glass" surfaces, and messages that breathe in. Namespaced so none of
    this leaks into the landing. */
 
-/* Wet glass: translucent cream, backdrop blur, a bright top edge + a soft
-   specular sheen so the surface reads as dewy rather than flat frosted. */
+/* Liquid glass: very translucent, strong backdrop blur, a bright top edge and a
+   soft inner sheen top + bottom so the surface reads like a water drop (Apple-style),
+   not flat frosted. `.glass` is the cream surface; `.glass-teal` the tinted user bubble. */
 .glass {
   position: relative;
   background: linear-gradient(
     135deg,
-    rgba(253, 251, 246, 0.74),
-    rgba(253, 251, 246, 0.40)
+    rgba(253, 251, 246, 0.56),
+    rgba(253, 251, 246, 0.26)
   );
-  -webkit-backdrop-filter: blur(18px) saturate(155%);
-  backdrop-filter: blur(18px) saturate(155%);
-  border: 1px solid rgba(255, 255, 255, 0.55);
+  -webkit-backdrop-filter: blur(22px) saturate(175%);
+  backdrop-filter: blur(22px) saturate(175%);
+  border: 1px solid rgba(255, 255, 255, 0.5);
   box-shadow:
     0 18px 50px -28px rgba(30, 77, 74, 0.45),
-    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    inset 0 -12px 22px -14px rgba(255, 255, 255, 0.4);
 }
-/* the dewy specular highlight */
-.glass::before {
+.glass-teal {
+  position: relative;
+  background: linear-gradient(
+    135deg,
+    rgba(30, 77, 74, 0.60),
+    rgba(30, 77, 74, 0.44)
+  );
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  backdrop-filter: blur(22px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  box-shadow:
+    0 16px 40px -26px rgba(30, 77, 74, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -12px 22px -16px rgba(255, 255, 255, 0.22);
+}
+/* the dewy water-drop highlight (top-left), shared by both glass surfaces */
+.glass::before,
+.glass-teal::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -122,7 +140,7 @@ h1, h2, h3, h4 {
   pointer-events: none;
   background: radial-gradient(
     120% 80% at 18% -10%,
-    rgba(255, 255, 255, 0.55),
+    rgba(255, 255, 255, 0.5),
     rgba(255, 255, 255, 0) 55%
   );
   mix-blend-mode: screen;
@@ -141,12 +159,13 @@ h1, h2, h3, h4 {
   width: 46vmax;
   height: 46vmax;
   border-radius: 50%;
-  opacity: 0.5;
+  opacity: 0.62;
   will-change: transform;
 }
 .blob-coral { background: radial-gradient(circle, var(--color-coral), transparent 64%); top: -12%; left: -8%; animation: drift-a 22s ease-in-out infinite; }
 .blob-teal  { background: radial-gradient(circle, var(--color-sage), transparent 64%);  bottom: -16%; right: -6%; animation: drift-b 26s ease-in-out infinite; }
-.blob-gold  { background: radial-gradient(circle, var(--color-gold), transparent 66%);  top: 28%; right: 18%; opacity: 0.38; animation: drift-c 30s ease-in-out infinite; }
+.blob-gold  { background: radial-gradient(circle, var(--color-gold), transparent 66%);  top: 28%; right: 18%; opacity: 0.5; animation: drift-c 30s ease-in-out infinite; }
+.blob-rose  { background: radial-gradient(circle, var(--color-coral), transparent 62%); bottom: -10%; left: 12%; width: 38vmax; height: 38vmax; opacity: 0.4; animation: drift-a 28s ease-in-out infinite reverse; }
 
 @keyframes drift-a {
   0%, 100% { transform: translate(0, 0) scale(1); }
