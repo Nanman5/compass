@@ -1,6 +1,15 @@
 import Link from "next/link";
 import Image from "next/image";
 import { CompassStar, CompassWordmark } from "@/components/CompassStar";
+import {
+  HangingPlant,
+  FramedNote,
+  FramedLeaf,
+  Sparkles,
+  Squiggle,
+  HeartDoodle,
+  Underline,
+} from "@/components/HeroDecor";
 
 const NAV = ["Features", "How it works", "For families", "For partners", "Pricing"];
 
@@ -51,8 +60,9 @@ function Hero() {
     <section className="relative overflow-hidden">
       <div className="mx-auto max-w-6xl px-5 pt-14 pb-20 grid lg:grid-cols-2 gap-12 items-center">
         <div>
-          <p className="eyebrow flex items-center gap-2">
-            Support for the moments that matter most <HeartDoodle />
+          <p className="eyebrow relative inline-flex items-center gap-2">
+            Support for the moments that matter most <HeartDoodle size={18} />
+            <Underline className="absolute -bottom-2 left-0 w-64 h-3" color="#e1785c" />
           </p>
           <h1 className="mt-4 text-5xl sm:text-6xl leading-[1.02] font-semibold">
             More confidence.
@@ -81,59 +91,24 @@ function Hero() {
 }
 
 function HeroScene() {
-  const feather =
-    "radial-gradient(128% 122% at 52% 44%, #000 62%, rgba(0,0,0,0.35) 84%, transparent 100%)";
   return (
-    <div className="relative">
-      {/* image blended into the page — no card, soft feathered edges */}
+    <div className="relative pt-10">
+      {/* cut-out family illustration (transparent bg) floating on the cream page */}
       <Image
-        src="/img/hero-family.png"
+        src="/img/hero-cutout.png"
         alt="A parent hugging their two young children on a cozy couch"
-        width={1536}
-        height={1024}
+        width={1401}
+        height={902}
         priority
-        className="w-full h-auto"
-        style={{ WebkitMaskImage: feather, maskImage: feather }}
+        className="relative z-0 w-[94%] ml-auto h-auto"
       />
 
-      {/* hand-drawn SVG accents to make it feel alive */}
-      <svg
-        className="absolute -left-3 bottom-6 w-28 h-16 opacity-70 pointer-events-none"
-        viewBox="0 0 120 60"
-        fill="none"
-        aria-hidden="true"
-      >
-        <path
-          d="M4 40 C 28 8, 44 8, 56 32 S 92 56, 116 22"
-          stroke="#8fb09a"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeDasharray="1 8"
-        />
-      </svg>
-      <svg
-        className="absolute right-8 bottom-2 w-10 h-10 opacity-80 pointer-events-none"
-        viewBox="0 0 24 24"
-        fill="none"
-        aria-hidden="true"
-      >
-        <path
-          d="M12 20s-7-4.6-7-9.3A3.7 3.7 0 0112 8a3.7 3.7 0 017 2.7C19 15.4 12 20 12 20z"
-          stroke="#e1785c"
-          strokeWidth="1.6"
-        />
-      </svg>
-
-      {/* floating note */}
-      <div className="absolute top-2 right-2 rotate-[6deg] bg-cream-card rounded-xl px-4 py-3 shadow-[var(--shadow-card)] border border-teal/10">
-        <span style={{ fontFamily: "var(--font-display)" }} className="italic text-teal text-sm">
-          You&apos;re doing great
-        </span>
-      </div>
-      {/* sparkles */}
-      <CompassStar size={22} className="absolute left-1 top-12 opacity-80" />
-      <CompassStar size={14} className="absolute left-10 bottom-10 opacity-60" />
-      <CompassStar size={12} className="absolute right-16 top-8 opacity-60" />
+      {/* hand-drawn SVG decorations (from HeroDecor) floating around the scene */}
+      <HangingPlant className="absolute -top-2 right-0 w-20 md:w-24 z-20" />
+      <FramedNote className="absolute top-0 right-[34%] w-24 md:w-28 rotate-[-5deg] z-20" />
+      <FramedLeaf className="absolute top-7 right-[15%] w-20 md:w-24 rotate-[4deg] z-20" />
+      <Sparkles className="absolute left-[2%] top-[16%] w-20 z-20" />
+      <Squiggle className="absolute left-0 bottom-3 w-24 z-20" color="#8fb09a" />
     </div>
   );
 }
@@ -367,19 +342,5 @@ function ClosingBand() {
         <p className="mt-2 text-sm font-semibold text-teal">Free to try. Cancel anytime.</p>
       </div>
     </footer>
-  );
-}
-
-/* small inline doodle */
-function HeartDoodle() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M12 20s-7-4.6-7-9.3A3.7 3.7 0 0112 8a3.7 3.7 0 017 2.7C19 15.4 12 20 12 20z"
-        stroke="#e1785c"
-        strokeWidth="1.6"
-        fill="none"
-      />
-    </svg>
   );
 }
