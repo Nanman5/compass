@@ -116,18 +116,18 @@ function HeroScene() {
 /* ─────────────────────────────────────────── Value strip */
 const VALUES = [
   {
-    title: "Personalized guidance",
-    body: "Advice that fits your child, your values, and your everyday life.",
+    title: "Guidance that knows your child",
+    body: "Compass learns your child and your values, then gives you real options in the moment — not just the tablet.",
     img: "/img/value-guidance.png",
   },
   {
-    title: "Practical next steps",
-    body: "Small, doable actions you can try right away — no overwhelm.",
+    title: "One clear next step",
+    body: "Overwhelming advice becomes a single doable action — including when tech helps and when to put the screen away.",
     img: "/img/value-steps.png",
   },
   {
-    title: "Grow with your child",
-    body: "Tools and insights that evolve as your child does too.",
+    title: "Grows with your family",
+    body: "It remembers what actually works and gets sharper every week, growing right alongside your child.",
     img: "/img/value-grow.png",
   },
 ];
@@ -139,7 +139,12 @@ function ValueStrip() {
         {VALUES.map((v) => (
           <div
             key={v.title}
-            className="bg-cream-card rounded-2xl border border-teal/10 p-6 shadow-[var(--shadow-card)]"
+            className="bg-cream-card rounded-2xl p-6 transition-shadow"
+            style={{
+              border: "1px solid rgba(230,181,102,0.4)",
+              boxShadow:
+                "0 0 22px -4px rgba(230,181,102,0.45), 0 0 40px -10px rgba(225,120,92,0.25), 0 10px 30px -16px rgba(62,58,52,0.25)",
+            }}
           >
             <div className="w-14 h-14 rounded-2xl overflow-hidden border border-teal/10">
               <Image
