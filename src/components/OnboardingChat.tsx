@@ -339,9 +339,9 @@ function Composer({
           onClick={onVoice}
           aria-label="Talk to Compass instead"
           title="Talk to Compass"
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-teal/80 transition hover:bg-teal/8 hover:text-teal active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-teal text-cream shadow-[var(--shadow-card)] transition duration-200 hover:bg-teal-soft hover:scale-105 active:scale-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral"
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <rect x="9" y="3" width="6" height="11" rx="3" stroke="currentColor" strokeWidth="2" />
             <path d="M5 11a7 7 0 0 0 14 0M12 18v3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
           </svg>
