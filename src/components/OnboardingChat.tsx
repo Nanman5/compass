@@ -78,6 +78,7 @@ export default function OnboardingChat() {
   const serverState = useRef<OnboardingState | null>(null);
   const nextId = useRef(0);
   const scrollRef = useRef<HTMLElement>(null);
+  const didInit = useRef(false);
 
   const pushMessage = useCallback((role: VisibleMessage["role"], text: string) => {
     setMessages((prev) => [...prev, { id: nextId.current++, role, text }]);
@@ -108,9 +109,11 @@ export default function OnboardingChat() {
     }
   }, [pushMessage]);
 
-  // Kick off the conversation: send the hidden seed, render only Compass's reply.
+  // Kick off the conversation exactly once (guard against React StrictMode double-invoke,
+  // which otherwise fires two kickoffs → two greeting bubbles).
   useEffect(() => {
-    let cancelled = false;
+    if (didInit.current) return;
+    didInit.current = true;
     familyId.current = getFamilyId();
     // Deep-link: /app?voice=1 opens straight into the spoken onboarding.
     if (new URLSearchParams(window.location.search).get("voice") === "1") {
@@ -119,23 +122,25 @@ export default function OnboardingChat() {
     (async () => {
       try {
         const data = await turn(KICKOFF);
-        if (!cancelled) applyResponse(data);
+        applyResponse(data);
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Couldn't reach Compass");
+        setError(err instanceof Error ? err.message : "Couldn't reach Compass");
       } finally {
-        if (!cancelled) setPending(false);
+        setPending(false);
       }
     })();
-    return () => {
-      cancelled = true;
-    };
   }, [turn, applyResponse]);
 
-  // Follow the conversation: smoothly scroll the message pane to the bottom as it grows.
+  // Follow the conversation: scroll the pane fully to the bottom as it grows. Wait two
+  // frames so the new bubble's layout (entrance animation, wrapped text, avatar) has
+  // settled before we measure — otherwise we scroll short and the last line is cut off.
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
-    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    const id = requestAnimationFrame(() =>
+      requestAnimationFrame(() => el.scrollTo({ top: el.scrollHeight, behavior: "smooth" })),
+    );
+    return () => cancelAnimationFrame(id);
   }, [messages, pending, done]);
 
   const send = useCallback(async () => {
@@ -177,7 +182,7 @@ export default function OnboardingChat() {
 
         <main
           ref={scrollRef}
-          className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain scroll-smooth pb-4 pt-1"
+          className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain scroll-smooth pb-6 pt-1"
           aria-live="polite"
         >
           {messages.map((m) =>
