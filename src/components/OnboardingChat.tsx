@@ -14,10 +14,28 @@
  * decorative and disabled under prefers-reduced-motion.
  */
 
+import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { CompassStar } from "@/components/CompassStar";
 import type { ChildProfile, OnboardingState } from "@/lib/types";
+
+/** The real Compass mark — full color for the header, monochrome teal for inline avatars. */
+const MARK_COLOR = "/brand/compass-mark-color.png";
+const MARK_TEAL = "/brand/compass-mark-teal.png";
+
+/** Small inline brand avatar shown beside each assistant message. */
+function MarkAvatar({ className }: { className?: string }) {
+  return (
+    <Image
+      src={MARK_TEAL}
+      alt=""
+      width={26}
+      height={26}
+      aria-hidden="true"
+      className={className}
+    />
+  );
+}
 
 interface VisibleMessage {
   id: number;
@@ -184,9 +202,14 @@ function Presence({ thinking, done }: { thinking: boolean; done: boolean }) {
   return (
     <header className="flex flex-col items-center gap-1.5 pt-8 pb-6 text-center">
       <div className={done ? "" : "compass-breathe"}>
-        <span className={thinking && !done ? "inline-block compass-spin" : "inline-block"}>
-          <CompassStar size={38} />
-        </span>
+        <Image
+          src={MARK_COLOR}
+          alt="Compass"
+          width={56}
+          height={56}
+          priority
+          className={thinking && !done ? "compass-thinking" : ""}
+        />
       </div>
       <span
         style={{ fontFamily: "var(--font-display)" }}
@@ -206,7 +229,7 @@ function Presence({ thinking, done }: { thinking: boolean; done: boolean }) {
 function AssistantBubble({ text }: { text: string }) {
   return (
     <div className="msg-in flex items-start gap-2.5">
-      <CompassStar size={20} className="mt-1 shrink-0 opacity-80" />
+      <MarkAvatar className="mt-0.5 shrink-0 opacity-90" />
       <div className="glass max-w-[85%] rounded-3xl rounded-tl-md px-5 py-3.5 text-[0.98rem] leading-relaxed text-ink">
         {text}
       </div>
@@ -227,7 +250,7 @@ function UserBubble({ text }: { text: string }) {
 function TypingBubble() {
   return (
     <div className="msg-in flex items-start gap-2.5">
-      <CompassStar size={20} className="mt-1 shrink-0 opacity-80" />
+      <MarkAvatar className="mt-0.5 shrink-0 opacity-90" />
       <div className="glass flex items-center gap-1.5 rounded-3xl rounded-tl-md px-5 py-4">
         {[0, 1, 2].map((i) => (
           <span
@@ -244,7 +267,7 @@ function TypingBubble() {
 function ErrorBubble({ text, onRetry }: { text: string; onRetry: () => void }) {
   return (
     <div className="msg-in flex items-start gap-2.5">
-      <CompassStar size={20} className="mt-1 shrink-0 opacity-60" />
+      <MarkAvatar className="mt-0.5 shrink-0 opacity-60" />
       <div className="glass max-w-[85%] rounded-3xl rounded-tl-md px-5 py-3.5 text-[0.95rem] leading-relaxed text-ink">
         <p className="text-coral-deep">{text}</p>
         <button
@@ -273,14 +296,26 @@ function Composer({
   onKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   onSend: () => void;
 }) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Grow the textarea with its content (up to the CSS max-height), and shrink back
+  // when it's cleared after a send — keeps the composer feeling responsive.
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [value]);
+
   return (
     <div className="sticky bottom-0 pb-5 pt-2">
-      <div className="glass flex items-end gap-2 rounded-[1.6rem] p-2 pl-5">
+      <div className="composer glass flex items-end gap-2 rounded-[1.6rem] p-2 pl-5">
         <label htmlFor="reply" className="sr-only">
           Your reply
         </label>
         <textarea
           id="reply"
+          ref={textareaRef}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={onKeyDown}
@@ -293,7 +328,7 @@ function Composer({
           onClick={onSend}
           disabled={disabled || value.trim().length === 0}
           aria-label="Send reply"
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-coral text-cream shadow-[0_10px_22px_-12px_rgba(225,120,92,0.9)] transition hover:bg-coral-deep focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal disabled:cursor-not-allowed disabled:opacity-40"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-coral text-cream shadow-[0_10px_22px_-12px_rgba(225,120,92,0.9)] transition duration-200 hover:bg-coral-deep hover:scale-105 active:scale-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path

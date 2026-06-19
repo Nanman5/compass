@@ -161,21 +161,36 @@ h1, h2, h3, h4 {
   50% { transform: translate(-5%, 6%) scale(1.18); }
 }
 
-/* A message breathing in from below. */
+/* A message settling in from below — quick, with a soft deceleration. */
 @keyframes rise-in {
-  from { opacity: 0; transform: translateY(12px) scale(0.985); }
+  from { opacity: 0; transform: translateY(8px) scale(0.99); }
   to { opacity: 1; transform: none; }
 }
-.msg-in { animation: rise-in 0.5s cubic-bezier(0.2, 0.75, 0.2, 1) both; }
+/* cubic-bezier(0.22, 1, 0.36, 1) = ease-out-quint: fast start, gentle landing. */
+.msg-in { animation: rise-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both; }
 
-/* The living Compass presence: a slow rotation + a gentle breath. */
-@keyframes spin-slow { to { transform: rotate(360deg); } }
-@keyframes breathe {
-  0%, 100% { transform: scale(1); opacity: 0.92; }
-  50% { transform: scale(1.07); opacity: 1; }
+/* Composer: a smooth focus glow so the input feels responsive, not abrupt. */
+.composer {
+  transition: box-shadow 0.28s ease, transform 0.28s ease;
 }
-.compass-spin { animation: spin-slow 38s linear infinite; }
+.composer:focus-within {
+  box-shadow:
+    0 22px 55px -26px rgba(30, 77, 74, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 0 2px rgba(143, 176, 154, 0.4);
+}
+
+/* The living Compass presence: a gentle breath, and a soft glow while thinking. */
+@keyframes breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+@keyframes glow-pulse {
+  0%, 100% { filter: drop-shadow(0 2px 4px rgba(30, 77, 74, 0.15)); }
+  50% { filter: drop-shadow(0 6px 18px rgba(225, 120, 92, 0.5)); }
+}
 .compass-breathe { animation: breathe 4.5s ease-in-out infinite; }
+.compass-thinking { animation: glow-pulse 1.6s ease-in-out infinite; }
 
 /* Typing indicator dots. */
 @keyframes dot-blink {
