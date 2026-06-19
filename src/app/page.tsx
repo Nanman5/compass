@@ -57,12 +57,8 @@ function Hero() {
     <section className="relative overflow-hidden">
       <div className="mx-auto max-w-6xl px-5 pt-14 pb-20 grid lg:grid-cols-2 gap-12 items-center">
         <div>
-          <div>
-            <p className="eyebrow">Support for the moments that matter most</p>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/decor/heart_divider.svg" width={800} height={210} alt="" aria-hidden className="mt-1 w-72 h-auto" />
-          </div>
-          <h1 className="mt-4 text-5xl sm:text-6xl leading-[1.02] font-semibold">
+          <p className="eyebrow">Support for the moments that matter most</p>
+          <h1 className="mt-5 text-5xl sm:text-6xl leading-[1.02] font-semibold">
             More confidence.
             <br />
             Calmer parenting.
