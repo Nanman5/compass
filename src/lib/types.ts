@@ -129,6 +129,8 @@ export interface LlmGenerateOptions {
   temperature?: number;
   /** Force a JSON object response (used by onboarding extraction). */
   json?: boolean;
+  /** Per-call model override (must match the resolved provider). Falls back to client default. */
+  model?: string;
 }
 
 export interface LlmClient {

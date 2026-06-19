@@ -20,12 +20,23 @@ import type {
   AgeBand,
   ChatMessage,
   ChildProfile,
+  LlmClient,
   OnboardingState,
   OnboardingTurnResult,
 } from "@/lib/types";
 
 /** Age bands we accept (must match `AgeBand` in types.ts). */
 const AGE_BANDS: readonly AgeBand[] = ["0-1", "2-3", "4-5", "6-8"];
+
+/**
+ * Onboarding runs on a light, fast model. Override with ONBOARDING_GEMINI_MODEL. Only
+ * applied when Gemini is the active provider — if we fell back to OpenAI, a Gemini model
+ * id would be invalid, so we let the OpenAI client use its own default.
+ */
+const ONBOARDING_GEMINI_MODEL = process.env.ONBOARDING_GEMINI_MODEL || "gemini-3.1-flash-lite";
+function onboardingModel(llm: LlmClient): string | undefined {
+  return llm.provider === "gemini" ? ONBOARDING_GEMINI_MODEL : undefined;
+}
 
 /**
  * The onboarding system prompt. Warm, brief, ONE question per turn, and bounded by
@@ -127,6 +138,7 @@ export async function onboardingTurn(
     system,
     messages: history,
     temperature: 0.6,
+    model: onboardingModel(llm),
   });
 
   const rawReply = response.text ?? "";
@@ -166,6 +178,7 @@ async function extractProfile(
     messages: [{ role: "user", content: `Conversation:\n${transcript}` }],
     temperature: 0,
     json: true,
+    model: onboardingModel(llm),
   });
 
   const parsed = safeParseJson(response.text);

@@ -146,7 +146,7 @@ class GeminiClient implements LlmClient {
   async generate(opts: LlmGenerateOptions): Promise<LlmResponse> {
     const tools = mapToolsToGemini(opts.tools);
     const params: ModelParams = {
-      model: this.model,
+      model: opts.model || this.model,
       ...(opts.system ? { systemInstruction: opts.system } : {}),
       ...(tools ? { tools: [{ functionDeclarations: tools }] } : {}),
       generationConfig: {
@@ -268,7 +268,7 @@ class OpenAIClient implements LlmClient {
         withTimeout(
           this.sdk.chat.completions.create(
             {
-              model: this.model,
+              model: opts.model || this.model,
               messages,
               ...(tools ? { tools } : {}),
               ...(opts.temperature !== undefined ? { temperature: opts.temperature } : {}),
