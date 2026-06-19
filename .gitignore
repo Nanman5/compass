@@ -13,6 +13,9 @@
 # testing
 /coverage
 
+# local-first per-family memory store (never commit family data)
+/.data/
+
 # next.js
 /.next/
 /out/
