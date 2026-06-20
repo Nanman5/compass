@@ -85,6 +85,7 @@ export default function OnboardingChat({ familyId: familyIdProp }: { familyId?: 
   const [messages, setMessages] = useState<VisibleMessage[]>([]);
   const [pending, setPending] = useState(true); // true during the opening kickoff
   const [done, setDone] = useState(false);
+  const [returning, setReturning] = useState(false);
   const [profile, setProfile] = useState<ChildProfile | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [input, setInput] = useState("");
@@ -165,6 +166,23 @@ export default function OnboardingChat({ familyId: familyIdProp }: { familyId?: 
       setVoiceOpen(true);
     }
     (async () => {
+      // Returning family? If Compass already knows this child, greet them back and go
+      // straight to their home — never re-onboard someone it already remembers.
+      try {
+        const memRes = await fetch(`/api/memory?familyId=${encodeURIComponent(familyId.current)}`);
+        if (memRes.ok) {
+          const mem = (await memRes.json()) as { profile?: ChildProfile | null };
+          if (mem?.profile?.childName) {
+            setProfile(mem.profile);
+            setReturning(true);
+            setDone(true);
+            setPending(false);
+            return;
+          }
+        }
+      } catch {
+        /* no saved family yet → fall through to onboarding */
+      }
       try {
         const data = await turn(KICKOFF);
         applyResponse(data);
@@ -240,7 +258,7 @@ export default function OnboardingChat({ familyId: familyIdProp }: { familyId?: 
           {done && profile ? (
             // Results screen: just the recap, no transcript / greeting bubble.
             <div className="mx-auto w-full max-w-4xl px-4 pb-12 pt-2 sm:px-6">
-              <Recap profile={profile} />
+              <Recap profile={profile} returning={returning} />
             </div>
           ) : (
             <div className="mx-auto w-full max-w-2xl space-y-4 px-4 pb-6 pt-1 sm:px-6">
@@ -565,7 +583,7 @@ const TOOLS: { title: string; body: string; icon: ComingIcon; href: string }[] =
   },
 ];
 
-function Recap({ profile }: { profile: ChildProfile }) {
+function Recap({ profile, returning }: { profile: ChildProfile; returning?: boolean }) {
   const left: [string, string][] = [
     ["Age", profile.ageBand],
     ["Loves", profile.interests.join(", ") || "—"],
@@ -603,9 +621,11 @@ function Recap({ profile }: { profile: ChildProfile }) {
                 "linear-gradient(115deg, #fdfbf6 0%, #f7e7d8 55%, #dfeae6 100%)",
             }}
           >
-            <p className="eyebrow">Profile saved</p>
+            <p className="eyebrow">{returning ? "Welcome back" : "Profile saved"}</p>
             <h2 className="mt-1 text-2xl font-semibold leading-tight text-teal">
-              Here&apos;s what Compass learned about {profile.childName}
+              {returning
+                ? `Good to see you again — here's what I remember about ${profile.childName}`
+                : `Here's what Compass learned about ${profile.childName}`}
             </h2>
             <div className="mt-5 grid grid-cols-1 gap-6 sm:grid-cols-2 sm:divide-x sm:divide-teal/15">
               <dl className="space-y-4 sm:pr-6">

@@ -423,7 +423,7 @@ function EmptyState() {
         you can tell Compass how it went — and the guidance grows around what works for
         your child.
       </p>
-      <a href="/app" className="btn btn-primary mt-6 inline-flex">
+      <a href="/app/coach" className="btn btn-primary mt-6 inline-flex">
         Talk to Compass
       </a>
     </div>

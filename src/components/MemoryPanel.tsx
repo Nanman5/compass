@@ -123,7 +123,9 @@ export default function MemoryPanel({ familyId }: { familyId: string | null }) {
                 onAdded={() => void load(familyId)}
               />
             )}
-            {ready.learnings.length > 0 && <LearningsSection learnings={ready.learnings} />}
+            {ready.learnings.length > 0 && (
+              <LearningsSection learnings={ready.learnings} childName={ready.profile?.childName} />
+            )}
             {ready.episodes.length > 0 && <EpisodesSection episodes={ready.episodes} />}
 
             <ForgetSection
@@ -155,14 +157,16 @@ function PanelHeader() {
         Back to Compass
       </Link>
       <div className="flex flex-col items-center gap-2.5">
-        <CompassStar size={40} />
-        <p className="eyebrow">Your data, your call</p>
+        <div className="compass-breathe">
+          <CompassStar size={46} />
+        </div>
+        <p className="eyebrow">Held just for you</p>
         <h1 className="text-3xl font-semibold leading-tight text-teal sm:text-4xl">
-          What Compass remembers
+          What I remember about your family
         </h1>
         <p className="max-w-md text-[0.98rem] leading-relaxed text-ink/70">
-          Everything below is stored for your family alone — to make Compass&apos;s guidance fit
-          your child. You can clear it all at any time.
+          This is everything I&apos;m holding — for your family alone, so my guidance fits your
+          child. The more we share, the better I understand them. You can clear it all anytime.
         </p>
       </div>
     </header>
@@ -191,15 +195,12 @@ function SectionHeading({ icon, label, count }: { icon: SectionIcon; label: stri
 /* ───────────────────────────────────────── profile */
 
 function ProfileSection({ profile }: { profile: ChildProfile }) {
-  // Core fields, then the optional evidence-based notes — only what the parent shared.
-  const core: { label: string; value: string }[] = [
-    { label: "Name", value: profile.childName },
-    { label: "Age", value: profile.ageBand },
-    { label: "Temperament", value: joinOrDash(profile.temperament) },
-    { label: "Loves", value: joinOrDash(profile.interests) },
-    { label: "Working on", value: joinOrDash(profile.struggles) },
-  ];
-  if (profile.familyStructure) core.push({ label: "Care", value: profile.familyStructure });
+  // Soft facets for glanceability — the warm sentence above is the soul; these are details.
+  const facets: { label: string; value: string }[] = [];
+  if (profile.ageBand) facets.push({ label: "Age", value: profile.ageBand });
+  if (profile.interests.length) facets.push({ label: "Loves", value: profile.interests.join(", ") });
+  if (profile.temperament.length) facets.push({ label: "Temperament", value: profile.temperament.join(", ") });
+  if (profile.familyStructure) facets.push({ label: "Care", value: profile.familyStructure });
 
   const mc = profile.mediaContext;
   const notes: { label: string; value: string }[] = [];
@@ -212,47 +213,99 @@ function ProfileSection({ profile }: { profile: ChildProfile }) {
     <section>
       <SectionHeading icon="profile" label="Your child" />
       <div className="glass overflow-hidden rounded-[1.5rem] p-6 sm:p-7">
-        <dl className="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
-          {core.map((f) => (
-            <div key={f.label}>
-              <dt className="text-[0.68rem] font-bold uppercase tracking-wide text-muted">{f.label}</dt>
-              <dd className="mt-0.5 text-[1rem] leading-snug text-ink">{f.value}</dd>
-            </div>
-          ))}
-        </dl>
+        {/* the woven portrait — Compass speaking warmly. This is the soul of the card. */}
+        <p
+          className="text-[1.16rem] font-medium leading-relaxed text-ink sm:text-[1.22rem]"
+          style={{ fontFamily: "var(--font-display)" }}
+        >
+          {wovenPortrait(profile)}
+        </p>
 
-        {profile.context && (
-          <div className="mt-6 border-t border-teal/12 pt-5">
-            <dt className="text-[0.68rem] font-bold uppercase tracking-wide text-muted">Family context</dt>
-            <dd className="mt-1 text-[0.96rem] leading-relaxed text-ink/85">{profile.context}</dd>
+        {facets.length > 0 && (
+          <div className="mt-5 flex flex-wrap gap-2">
+            {facets.map((f) => (
+              <span
+                key={f.label}
+                className="rounded-full bg-teal/[0.06] px-3 py-1.5 text-[0.85rem] text-ink/80"
+              >
+                <span className="text-teal/55">{f.label} · </span>
+                {f.value}
+              </span>
+            ))}
           </div>
         )}
 
+        {profile.context && (
+          <p className="mt-5 border-t border-teal/12 pt-4 text-[0.95rem] leading-relaxed text-ink/80">
+            {profile.context}
+          </p>
+        )}
+
         {notes.length > 0 && (
-          <div className="mt-6 border-t border-teal/12 pt-5">
-            <p className="mb-3 text-[0.68rem] font-bold uppercase tracking-wide text-muted">
-              From what you shared
+          <div className="mt-5 border-t border-teal/12 pt-4">
+            <p className="mb-2.5 text-[0.68rem] font-bold uppercase tracking-wide text-muted">
+              What you&apos;ve shared about screens
             </p>
-            <dl className="space-y-2.5">
+            <dl className="space-y-2">
               {notes.map((n) => (
                 <div key={n.label} className="flex flex-col gap-0.5 sm:flex-row sm:gap-2">
-                  <dt className="shrink-0 text-[0.9rem] font-semibold text-teal/75">{n.label}</dt>
-                  <dd className="text-[0.92rem] leading-relaxed text-ink/75">{n.value}</dd>
+                  <dt className="shrink-0 text-[0.88rem] font-semibold text-teal/75">{n.label}</dt>
+                  <dd className="text-[0.9rem] leading-relaxed text-ink/75">{n.value}</dd>
                 </div>
               ))}
             </dl>
           </div>
         )}
 
-        <p className="mt-6 border-t border-teal/12 pt-4 text-xs text-muted">
-          Saved {formatDate(profile.createdAt)}
+        <p className="mt-5 border-t border-teal/12 pt-3.5 text-xs text-muted">
+          {profile.createdAt ? `We first met ${formatDate(profile.createdAt)}` : "Getting to know each other"}
           {profile.updatedAt && profile.updatedAt !== profile.createdAt
-            ? ` · updated ${formatDate(profile.updatedAt)}`
+            ? ` · last updated ${formatDate(profile.updatedAt)}`
             : ""}
         </p>
       </div>
     </section>
   );
+}
+
+/** Weave the stored facts into a warm, first-person sentence — Compass describing the child. */
+function wovenPortrait(p: ChildProfile): string {
+  const name = p.childName || "your little one";
+  const parts: string[] = [];
+
+  let opener = `This is ${name}`;
+  if (p.ageBand) opener += `, around ${p.ageBand}`;
+  if (p.interests.length) opener += `, who lights up around ${joinNatural(p.interests)}`;
+  parts.push(opener + ".");
+
+  if (p.temperament.length) {
+    parts.push(`${name} tends to be ${joinNatural(p.temperament)}.`);
+  }
+
+  if (p.struggles.length) {
+    parts.push(`${careSubject(p.familyStructure)} working through ${joinNatural(p.struggles)} right now.`);
+  } else if (p.familyStructure) {
+    parts.push(`${careSubject(p.familyStructure)} in this together.`);
+  }
+
+  return parts.join(" ");
+}
+
+/** "You and a co-parent are" / "You're" — the subject for the "working through…" clause. */
+function careSubject(care?: string): string {
+  const c = (care || "").toLowerCase();
+  if (c.includes("co-parent") || c.includes("two home") || c.includes("partner") || c.includes("together")) {
+    return "You and a co-parent are";
+  }
+  return "You're";
+}
+
+/** ["a","b","c"] → "a, b and c". */
+function joinNatural(arr: string[]): string {
+  const a = arr.filter(Boolean);
+  if (a.length <= 1) return a[0] ?? "";
+  if (a.length === 2) return `${a[0]} and ${a[1]}`;
+  return `${a.slice(0, -1).join(", ")} and ${a[a.length - 1]}`;
 }
 
 /* ───────────────────────────────────────── add context (parent-authored) */
@@ -294,10 +347,10 @@ function AddContextSection({
 
   return (
     <section>
-      <SectionHeading icon="learning" label="Tell Compass more" />
+      <SectionHeading icon="learning" label="Tell me more" />
       <div className="glass rounded-2xl p-5">
         <p className="text-sm leading-relaxed text-ink/70">
-          Anything you add here, Compass uses next time it helps you — like {who} just started
+          Anything you tell me here, I&apos;ll use next time I help you — like {who} just started
           preschool, has a new sibling, or what tends to calm them.
         </p>
         <textarea
@@ -330,37 +383,46 @@ function AddContextSection({
 
 /* ───────────────────────────────────────── learnings */
 
-function LearningsSection({ learnings }: { learnings: Learning[] }) {
+function LearningsSection({ learnings, childName }: { learnings: Learning[]; childName?: string }) {
   // Newest first — most recent learnings are the most relevant to surface.
   const sorted = [...learnings].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const who = childName || "your family";
   return (
     <section>
-      <SectionHeading icon="learning" label="What Compass has learned" count={sorted.length} />
-      <ul className="space-y-3">
+      <SectionHeading icon="learning" label={`What I'm learning about ${who}`} count={sorted.length} />
+      {/* a living thread — each thing remembered, strung along one quiet line */}
+      <ol className="relative ml-1.5 space-y-3.5 border-l border-teal/15 pl-6">
         {sorted.map((l) => (
-          <li key={l.id} className="glass rounded-2xl px-5 py-4">
-            <p className="text-[0.98rem] leading-relaxed text-ink">{l.fact}</p>
-            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
-              <span>{formatDate(l.createdAt)}</span>
-              <span aria-hidden="true" className="text-teal/25">•</span>
-              <span className="capitalize">{sourceLabel(l.source)}</span>
-              {l.sensitivity === "high" && (
-                <span className="rounded-full bg-coral/12 px-2 py-0.5 text-[0.65rem] font-bold uppercase tracking-wide text-coral-deep">
-                  Sensitive
-                </span>
-              )}
+          <li key={l.id} className="relative">
+            <span
+              aria-hidden="true"
+              className="absolute -left-[1.65rem] top-2 h-3 w-3 rounded-full bg-coral ring-4 ring-cream"
+            />
+            <div className="glass rounded-2xl px-5 py-4">
+              <p className="text-[0.98rem] leading-relaxed text-ink">{l.fact}</p>
+              <p className="mt-1.5 text-xs text-muted">
+                {provenance(l.source)} · {formatDate(l.createdAt)}
+                {l.sensitivity === "high" ? " · sensitive" : ""}
+              </p>
             </div>
           </li>
         ))}
-      </ul>
+      </ol>
+      <p className="mt-4 pl-6 text-[0.88rem] italic leading-relaxed text-teal/70">
+        The more we talk, the better I understand {who}.
+      </p>
     </section>
   );
 }
 
-/** "coach-turn" → "Coach turn", "onboarding" → "Onboarding". */
-function sourceLabel(source: string): string {
-  const clean = source.replace(/[-_]+/g, " ").trim();
-  return clean ? clean.charAt(0).toUpperCase() + clean.slice(1) : "Compass";
+/** Soft, first-person provenance — how Compass came to know each thing. */
+function provenance(source: string): string {
+  const s = source.toLowerCase();
+  if (s.includes("parent")) return "you told me";
+  if (s.includes("onboard")) return "from when we met";
+  if (s.includes("coach")) return "from our chats";
+  if (s.includes("help")) return "from a hard moment";
+  return "I noticed";
 }
 
 /* ───────────────────────────────────────── episodes */
@@ -369,7 +431,7 @@ function EpisodesSection({ episodes }: { episodes: Episode[] }) {
   const sorted = [...episodes].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   return (
     <section>
-      <SectionHeading icon="episode" label="Recent moments" count={sorted.length} />
+      <SectionHeading icon="episode" label="Moments we've worked through" count={sorted.length} />
       <ul className="space-y-4">
         {sorted.map((e) => (
           <li key={e.id} className="glass rounded-2xl p-5 sm:p-6">
@@ -475,13 +537,13 @@ function EmptyState() {
       <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-sage-soft/40">
         <CompassStar size={34} />
       </span>
-      <h2 className="mt-5 text-xl font-semibold text-teal">Nothing here yet</h2>
+      <h2 className="mt-5 text-xl font-semibold text-teal">We&apos;re just getting started</h2>
       <p className="mt-2 text-[0.96rem] leading-relaxed text-ink/70">
-        Compass hasn&apos;t learned anything about your family so far. Once you go through
-        onboarding and try a few steps, what it remembers will show up here.
+        I don&apos;t know your family yet. Once we talk and you try a few steps, everything I
+        come to understand about your child will live here — and you can clear it anytime.
       </p>
       <Link href="/app" className="btn btn-primary mt-6">
-        Start with Compass
+        Let&apos;s begin
       </Link>
     </div>
   );
