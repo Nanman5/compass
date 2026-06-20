@@ -34,14 +34,12 @@
 import { NextResponse } from "next/server";
 
 import { evidence } from "@/lib/evidence";
+import { ingestSource, IngestError } from "@/lib/ingest";
 import { getLlm } from "@/lib/llm";
 import { memory } from "@/lib/memory";
 import type { ChildProfile, EvidenceSnippet } from "@/lib/types";
 
 export const runtime = "nodejs";
-
-/** Cap the pasted content so a giant paste can't blow the prompt / cost budget. */
-const MAX_CONTENT_CHARS = 6_000;
 
 interface PersonalizeResult {
   step: string;
@@ -70,23 +68,47 @@ export async function POST(req: Request): Promise<Response> {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { familyId, content } = (body ?? {}) as {
+  const { familyId, content, url, image, video } = (body ?? {}) as {
     familyId?: unknown;
     content?: unknown;
+    url?: unknown;
+    image?: { data?: unknown; mimeType?: unknown };
+    video?: { data?: unknown; mimeType?: unknown };
   };
 
   if (typeof familyId !== "string" || familyId.trim().length === 0) {
     return NextResponse.json({ error: "familyId is required" }, { status: 400 });
   }
-  if (typeof content !== "string" || content.trim().length === 0) {
-    return NextResponse.json({ error: "content is required" }, { status: 400 });
-  }
 
-  const clipped = content.trim().slice(0, MAX_CONTENT_CHARS);
+  // Turn whatever they gave us — text, a link, a screenshot, or a clip — into advice text.
+  let clipped: string;
+  let sourceLabel: string;
+  try {
+    const ingested = await ingestSource({
+      content: typeof content === "string" ? content : undefined,
+      url: typeof url === "string" ? url : undefined,
+      image:
+        image && typeof image.data === "string" && typeof image.mimeType === "string"
+          ? { data: image.data, mimeType: image.mimeType }
+          : undefined,
+      video:
+        video && typeof video.data === "string" && typeof video.mimeType === "string"
+          ? { data: video.data, mimeType: video.mimeType }
+          : undefined,
+    });
+    clipped = ingested.text;
+    sourceLabel = ingested.sourceLabel;
+  } catch (err) {
+    if (err instanceof IngestError) {
+      return NextResponse.json({ error: err.message }, { status: 400 });
+    }
+    console.error("[personalize] ingest failed:", err);
+    return NextResponse.json({ error: "Couldn't read that — try pasting the text instead." }, { status: 400 });
+  }
 
   try {
     // 1) Personalize to THIS child; 2) ground the check in trusted evidence relevant to
-    //    the pasted content. Both are best-effort — a missing profile just yields generic
+    //    the extracted content. Both are best-effort — a missing profile just yields generic
     //    (but still age-aware) guidance.
     const profile = await memory.getProfile(familyId).catch(() => null);
     const snippets = evidence.retrieve(clipped, 4);
@@ -105,7 +127,7 @@ export async function POST(req: Request): Promise<Response> {
     });
 
     const parsed = parseResult(response.text, snippets);
-    return NextResponse.json(parsed);
+    return NextResponse.json({ ...parsed, sourceLabel });
   } catch (err) {
     console.error("[personalize] failed:", err);
     // Never 500 the parent into a dead end — return the gentle, honest fallback.

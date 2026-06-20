@@ -30,9 +30,39 @@ interface PersonalizeResult {
   supported: boolean;
   caution?: string;
   citations: { title: string; source: string }[];
+  sourceLabel?: string;
 }
 
 type Phase = "idle" | "reading" | "done" | "error";
+
+/** An attached screenshot or clip, ready to send as base64. */
+interface Attachment {
+  name: string;
+  kind: "image" | "video";
+  mimeType: string;
+  base64: string;
+}
+
+const MAX_FILE_BYTES = 18 * 1024 * 1024;
+
+/** Read a File into base64 (no data: prefix) + its mime type. */
+function readFile(file: File): Promise<Attachment> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const res = String(reader.result);
+      const base64 = res.includes(",") ? res.slice(res.indexOf(",") + 1) : res;
+      resolve({
+        name: file.name || (file.type.startsWith("video") ? "clip" : "screenshot"),
+        kind: file.type.startsWith("video") ? "video" : "image",
+        mimeType: file.type || "image/png",
+        base64,
+      });
+    };
+    reader.onerror = () => reject(new Error("Couldn't read that file"));
+    reader.readAsDataURL(file);
+  });
+}
 
 /** Resolve the family scope: signed-in account first, else the per-browser demo id. */
 async function resolveFamilyId(): Promise<string> {
@@ -52,6 +82,7 @@ async function resolveFamilyId(): Promise<string> {
 
 export default function PastePersonalize() {
   const [content, setContent] = useState("");
+  const [file, setFile] = useState<Attachment | null>(null);
   const [phase, setPhase] = useState<Phase>("idle");
   const [result, setResult] = useState<PersonalizeResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -81,9 +112,29 @@ export default function PastePersonalize() {
     }
   }, [phase]);
 
+  /** Attach a screenshot or clip (from the file picker or a clipboard paste). */
+  const attach = useCallback((f: File | null) => {
+    if (!f) {
+      setFile(null);
+      return;
+    }
+    if (f.size > MAX_FILE_BYTES) {
+      setError(
+        f.type.startsWith("video")
+          ? "That clip is a bit big — try a shorter one (under ~18MB)."
+          : "That image is a bit big — try a smaller screenshot.",
+      );
+      setPhase("error");
+      return;
+    }
+    setError(null);
+    if (phase === "error") setPhase("idle");
+    void readFile(f).then(setFile).catch(() => setError("Couldn't read that file."));
+  }, [phase]);
+
   const submit = useCallback(async () => {
     const text = content.trim();
-    if (text.length === 0 || phase === "reading") return;
+    if ((text.length === 0 && !file) || phase === "reading") return;
 
     setPhase("reading");
     setError(null);
@@ -91,10 +142,16 @@ export default function PastePersonalize() {
 
     try {
       if (!familyId.current) familyId.current = await resolveFamilyId();
+      // A screenshot/clip wins if attached; otherwise the text (which may be a link the
+      // server will fetch). Mutually exclusive keeps the request small and clear.
+      const payload: Record<string, unknown> = { familyId: familyId.current };
+      if (file) payload[file.kind] = { data: file.base64, mimeType: file.mimeType };
+      else payload.content = text;
+
       const res = await fetch("/api/personalize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ familyId: familyId.current, content: text }),
+        body: JSON.stringify(payload),
       });
       const data = (await res.json()) as PersonalizeResult & { error?: string };
       if (!res.ok) throw new Error(data.error || "Something went wrong");
@@ -104,10 +161,11 @@ export default function PastePersonalize() {
       setError(err instanceof Error ? err.message : "Couldn't reach Compass");
       setPhase("error");
     }
-  }, [content, phase]);
+  }, [content, file, phase]);
 
   const reset = useCallback(() => {
     setContent("");
+    setFile(null);
     setResult(null);
     setError(null);
     setPhase("idle");
@@ -150,6 +208,8 @@ export default function PastePersonalize() {
             onSubmit={() => void submit()}
             reading={reading}
             error={phase === "error" ? error : null}
+            file={file}
+            onAttach={attach}
           />
         )}
       </div>
@@ -195,6 +255,8 @@ function PasteBox({
   onSubmit,
   reading,
   error,
+  file,
+  onAttach,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -202,29 +264,76 @@ function PasteBox({
   onSubmit: () => void;
   reading: boolean;
   error: string | null;
+  file: Attachment | null;
+  onAttach: (f: File | null) => void;
 }) {
-  const empty = value.trim().length === 0;
+  const fileRef = useRef<HTMLInputElement>(null);
+  const empty = value.trim().length === 0 && !file;
+
+  // Let parents paste a screenshot straight from the clipboard into the box.
+  const onPaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const img = Array.from(e.clipboardData.files).find((f) => f.type.startsWith("image/"));
+    if (img) {
+      e.preventDefault();
+      onAttach(img);
+    }
+  };
 
   return (
     <div className="msg-in">
       <div className="composer glass rounded-[1.6rem] p-2.5">
         <label htmlFor="paste" className="sr-only">
-          Paste the advice you found
+          Paste the advice you found, or a link
         </label>
         <textarea
           id="paste"
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={onKeyDown}
-          disabled={reading}
-          rows={6}
-          placeholder="Paste a reel transcript, an article, or a screenshot of advice here…"
-          className="block max-h-[40dvh] min-h-[7.5rem] w-full resize-none rounded-2xl bg-transparent px-3 py-2.5 text-[0.98rem] leading-relaxed text-ink placeholder:text-muted/70 focus:outline-none disabled:opacity-50"
+          onPaste={onPaste}
+          disabled={reading || !!file}
+          rows={file ? 3 : 6}
+          placeholder="Paste advice, drop a link, or add a screenshot / clip below…"
+          className="block max-h-[40dvh] min-h-[5rem] w-full resize-none rounded-2xl bg-transparent px-3 py-2.5 text-[0.98rem] leading-relaxed text-ink placeholder:text-muted/70 focus:outline-none disabled:opacity-50"
         />
-        <div className="flex items-center justify-between gap-3 px-1.5 pt-1.5">
-          <span className="hidden text-xs text-muted/80 sm:block">
-            Compass reads it as evidence, never as orders.
-          </span>
+
+        {/* Attached screenshot / clip chip */}
+        {file && (
+          <div className="mx-1.5 mb-1 flex items-center gap-2.5 rounded-xl bg-teal/[0.06] px-3 py-2">
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-teal/10 text-teal">
+              {file.kind === "video" ? <ClipIcon /> : <ImageIcon />}
+            </span>
+            <span className="min-w-0 flex-1 truncate text-sm text-ink">{file.name}</span>
+            <button
+              onClick={() => onAttach(null)}
+              disabled={reading}
+              className="shrink-0 rounded-full p-1 text-muted transition hover:bg-teal/10 hover:text-teal"
+              aria-label="Remove attachment"
+            >
+              <CloseIcon />
+            </button>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between gap-2 px-1.5 pt-1.5">
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*,video/*"
+            className="hidden"
+            onChange={(e) => {
+              onAttach(e.target.files?.[0] ?? null);
+              e.target.value = "";
+            }}
+          />
+          <button
+            onClick={() => fileRef.current?.click()}
+            disabled={reading || !!file}
+            className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-semibold text-teal/80 transition hover:bg-teal/[0.06] hover:text-teal disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <PaperclipIcon />
+            <span className="hidden sm:inline">Screenshot or clip</span>
+          </button>
           <button
             onClick={onSubmit}
             disabled={empty || reading}
@@ -246,13 +355,12 @@ function PasteBox({
       </div>
 
       {error && (
-        <p className="msg-in mt-3 text-center text-sm font-semibold text-coral-deep">
-          {error} — try again in a moment.
-        </p>
+        <p className="msg-in mt-3 text-center text-sm font-semibold text-coral-deep">{error}</p>
       )}
 
       <p className="mt-5 text-center text-xs leading-relaxed text-muted">
-        Private to your family. Compass never shares what you paste.
+        Paste text or a link, or add a screenshot or short clip. Private to your family —
+        Compass never shares what you give it.
       </p>
     </div>
   );
@@ -405,6 +513,41 @@ function PasteIcon() {
       <rect x="6" y="4" width="12" height="16" rx="2" stroke="currentColor" strokeWidth="1.7" />
       <path d="M9 4a3 3 0 0 1 6 0" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
       <path d="M9 12h6M9 16h4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function PaperclipIcon() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M21 11.5 12.5 20a5 5 0 0 1-7-7L14 4.5a3.3 3.3 0 0 1 4.7 4.7L10 18a1.6 1.6 0 0 1-2.3-2.3l8-8" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function ImageIcon() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="3" y="4" width="18" height="16" rx="2.5" stroke="currentColor" strokeWidth="1.7" />
+      <circle cx="8.5" cy="9.5" r="1.6" fill="currentColor" />
+      <path d="m4 17 5-4.5 4 3.2L17 12l3 3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function ClipIcon() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="3" y="5" width="18" height="14" rx="2.5" stroke="currentColor" strokeWidth="1.7" />
+      <path d="m10 9 5 3-5 3V9Z" fill="currentColor" />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
 }
