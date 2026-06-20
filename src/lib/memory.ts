@@ -29,6 +29,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir, readFile, writeFile, rm } from "node:fs/promises";
 import path from "node:path";
 
+import { FirestoreMemoryStore } from "@/lib/memory.firestore";
 import type {
   ChildProfile,
   Episode,
@@ -171,5 +172,13 @@ class LocalMemoryStore implements MemoryStore {
   }
 }
 
-/** Singleton store shared across the app (mirrors a single DynamoDB client). */
-export const memory: MemoryStore = new LocalMemoryStore();
+/**
+ * Singleton store shared across the app. Backend is chosen by env: set
+ * MEMORY_BACKEND=firestore (e.g. on Cloud Run) for real, persistent, multi-tenant
+ * storage in Cloud Firestore; otherwise the local JSON store (great for dev/tests).
+ * Both implement the SAME `MemoryStore` interface, so nothing else changes.
+ */
+export const memory: MemoryStore =
+  process.env.MEMORY_BACKEND === "firestore"
+    ? new FirestoreMemoryStore()
+    : new LocalMemoryStore();
