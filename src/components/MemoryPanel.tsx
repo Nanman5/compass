@@ -116,6 +116,13 @@ export default function MemoryPanel({ familyId }: { familyId: string | null }) {
         {ready && !empty && (
           <div className="msg-in space-y-10">
             {ready.profile && <ProfileSection profile={ready.profile} />}
+            {familyId && (
+              <AddContextSection
+                familyId={familyId}
+                childName={ready.profile?.childName}
+                onAdded={() => void load(familyId)}
+              />
+            )}
             {ready.learnings.length > 0 && <LearningsSection learnings={ready.learnings} />}
             {ready.episodes.length > 0 && <EpisodesSection episodes={ready.episodes} />}
 
@@ -243,6 +250,79 @@ function ProfileSection({ profile }: { profile: ChildProfile }) {
             ? ` · updated ${formatDate(profile.updatedAt)}`
             : ""}
         </p>
+      </div>
+    </section>
+  );
+}
+
+/* ───────────────────────────────────────── add context (parent-authored) */
+
+function AddContextSection({
+  familyId,
+  childName,
+  onAdded,
+}: {
+  familyId: string;
+  childName?: string;
+  onAdded: () => void;
+}) {
+  const [text, setText] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
+  const who = childName ? childName : "your family";
+
+  const save = useCallback(async () => {
+    const fact = text.trim();
+    if (!fact || saving) return;
+    setSaving(true);
+    setJustSaved(false);
+    try {
+      const res = await fetch("/api/learnings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ familyId, fact }),
+      });
+      if (res.ok) {
+        setText("");
+        setJustSaved(true);
+        onAdded();
+      }
+    } finally {
+      setSaving(false);
+    }
+  }, [text, saving, familyId, onAdded]);
+
+  return (
+    <section>
+      <SectionHeading icon="learning" label="Tell Compass more" />
+      <div className="glass rounded-2xl p-5">
+        <p className="text-sm leading-relaxed text-ink/70">
+          Anything you add here, Compass uses next time it helps you — like {who} just started
+          preschool, has a new sibling, or what tends to calm them.
+        </p>
+        <textarea
+          value={text}
+          onChange={(e) => {
+            setText(e.target.value);
+            if (justSaved) setJustSaved(false);
+          }}
+          rows={2}
+          maxLength={600}
+          placeholder={`Something about ${who}…`}
+          className="mt-3 w-full resize-none rounded-xl border border-teal/15 bg-cream-card/70 px-4 py-3 text-[0.95rem] text-ink outline-none transition focus:border-teal/40 focus:ring-2 focus:ring-sage/40"
+        />
+        <div className="mt-3 flex items-center justify-between gap-3">
+          <span className="text-xs text-teal/70">
+            {justSaved ? "Added — Compass will remember this." : " "}
+          </span>
+          <button
+            onClick={() => void save()}
+            disabled={!text.trim() || saving}
+            className="btn btn-primary px-6 py-2.5 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {saving ? "Saving…" : "Add context"}
+          </button>
+        </div>
       </div>
     </section>
   );
