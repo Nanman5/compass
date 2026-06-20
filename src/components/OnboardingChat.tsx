@@ -15,6 +15,7 @@
  */
 
 import Image from "next/image";
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import VoiceOnboarding from "@/components/VoiceOnboarding";
@@ -523,23 +524,38 @@ function Composer({
 
 /* ───────────────────────────────────────── completion recap + coming soon */
 
-type ComingIcon = "step" | "graph" | "bookmark";
+type ComingIcon = "step" | "graph" | "bookmark" | "sparkle" | "calendar";
 
-const COMING_SOON: { title: string; body: string; icon: ComingIcon }[] = [
+const TOOLS: { title: string; body: string; icon: ComingIcon; href: string }[] = [
   {
     title: "Your one next step",
-    body: "Describe a struggle and Compass returns a single concrete action — plus when to put the screen away.",
+    body: "Describe a struggle — Compass returns one concrete action, plus when to put the screen away.",
     icon: "step",
+    href: "/app/coach",
+  },
+  {
+    title: "Paste & personalize",
+    body: "Drop in a reel or article; Compass checks it against trusted evidence and hands back the one thing worth trying.",
+    icon: "sparkle",
+    href: "/app/paste",
+  },
+  {
+    title: "This week's drop",
+    body: "A study, a tip, and an activity matched to your child right now.",
+    icon: "calendar",
+    href: "/app/weekly",
   },
   {
     title: "Win logger",
-    body: "A quick “how did it go?” after you try a step, so guidance sharpens to what actually works for your child.",
+    body: "A quick “how did it go?” so guidance sharpens to what actually works for your child.",
     icon: "graph",
+    href: "/app/wins",
   },
   {
     title: "What Compass remembers",
     body: "See and clear everything Compass has learned about your family. Your data, your call.",
     icon: "bookmark",
+    href: "/app/memory",
   },
 ];
 
@@ -611,38 +627,32 @@ function Recap({ profile }: { profile: ChildProfile }) {
         </div>
       </div>
 
-      {/* coming next */}
+      {/* your toolkit — live feature links */}
       <div>
         <div className="flex items-center gap-4">
-          <span className="eyebrow shrink-0">Coming next</span>
+          <span className="eyebrow shrink-0">Your toolkit</span>
           <span className="h-px flex-1 bg-teal/15" />
         </div>
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
-          {COMING_SOON.map((c) => (
-            <div
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {TOOLS.map((c) => (
+            <Link
               key={c.title}
-              className="glass relative flex cursor-not-allowed select-none flex-col rounded-2xl p-5 opacity-70"
-              aria-disabled="true"
-              title="Coming soon"
+              href={c.href}
+              className="glass group flex flex-col rounded-2xl p-5 transition duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-soft)]"
             >
-              <div className="flex items-center justify-between">
-                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-sage-soft/40 text-teal/70">
-                  <ComingSoonIcon kind={c.icon} />
-                </span>
-                <span className="rounded-full bg-teal/10 px-2.5 py-0.5 text-[0.6rem] font-bold uppercase tracking-wide text-teal/70">
-                  Soon
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-sage-soft/50 text-teal">
+                <ComingSoonIcon kind={c.icon} />
+              </span>
+              <h3 className="mt-3 text-[0.98rem] font-semibold leading-snug text-teal">{c.title}</h3>
+              <p className="mt-1.5 flex-1 text-[0.84rem] leading-relaxed text-ink/65">{c.body}</p>
+              <div className="mt-4 flex justify-end">
+                <span className="grid h-9 w-9 place-items-center rounded-full border border-teal/20 text-teal/70 transition group-hover:border-teal group-hover:bg-teal/5">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M5 12h13M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
                 </span>
               </div>
-              <h3 className="mt-3 text-[0.98rem] font-semibold leading-snug text-teal/80">{c.title}</h3>
-              <p className="mt-1.5 flex-1 text-[0.84rem] leading-relaxed text-ink/55">{c.body}</p>
-              <div className="mt-4 flex items-center gap-1.5 text-teal/45">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <rect x="5" y="11" width="14" height="9" rx="2" stroke="currentColor" strokeWidth="1.8" />
-                  <path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                </svg>
-                <span className="text-[0.7rem] font-semibold uppercase tracking-wide">Not yet available</span>
-              </div>
-            </div>
+            </Link>
           ))}
         </div>
       </div>
@@ -690,6 +700,19 @@ function ComingSoonIcon({ kind }: { kind: ComingIcon }) {
         <path d="M4 16l5-5 4 3 7-8" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
         <circle cx="9" cy="11" r="1.4" fill="currentColor" />
         <circle cx="13" cy="14" r="1.4" fill="currentColor" />
+      </svg>
+    );
+  if (kind === "sparkle")
+    return (
+      <svg {...common}>
+        <path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+      </svg>
+    );
+  if (kind === "calendar")
+    return (
+      <svg {...common}>
+        <rect x="4" y="5" width="16" height="15" rx="2" stroke="currentColor" strokeWidth="1.6" />
+        <path d="M4 9h16M8 3v4M16 3v4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
       </svg>
     );
   return (
