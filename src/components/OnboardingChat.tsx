@@ -197,11 +197,15 @@ export default function OnboardingChat({ familyId: familyIdProp }: { familyId?: 
   // Follow the conversation: scroll the pane fully to the bottom as it grows. Wait two
   // frames so the new bubble's layout (entrance animation, wrapped text, avatar) has
   // settled before we measure — otherwise we scroll short and the last line is cut off.
+  // BUT once we're done (showing the dashboard), scroll to the TOP so the banner + greeting
+  // are what the parent sees first, not the footer.
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
     const id = requestAnimationFrame(() =>
-      requestAnimationFrame(() => el.scrollTo({ top: el.scrollHeight, behavior: "smooth" })),
+      requestAnimationFrame(() =>
+        el.scrollTo({ top: done ? 0 : el.scrollHeight, behavior: "smooth" }),
+      ),
     );
     return () => cancelAnimationFrame(id);
   }, [messages, pending, done]);
@@ -584,72 +588,65 @@ const TOOLS: { title: string; body: string; icon: ComingIcon; href: string }[] =
 ];
 
 function Recap({ profile, returning }: { profile: ChildProfile; returning?: boolean }) {
-  const left: [string, string][] = [
-    ["Age", profile.ageBand],
-    ["Loves", profile.interests.join(", ") || "—"],
-  ];
-  if (profile.familyStructure) left.push(["Care", profile.familyStructure]);
-  const right: [string, string][] = [
-    ["Temperament", profile.temperament.join(", ") || "—"],
-    ["Working on", profile.struggles.join(", ") || "—"],
-  ];
-
-  // Optional evidence-based notes (only what the parent shared).
-  const mc = profile.mediaContext;
-  const notes: [string, string][] = [];
-  if (mc?.crowdsOut) notes.push(["Screens crowd out", mc.crowdsOut]);
-  if (mc?.calmUse) notes.push(["Screens to calm", mc.calmUse]);
-  if (mc?.mediation) notes.push(["Watching together", mc.mediation]);
-  if (profile.parentDistraction) notes.push(["Your own phone pull", profile.parentDistraction]);
+  const name = profile.childName || "your little one";
+  // Compact summary chips — a glance at who Compass is holding (details live in /app/memory).
+  const chips: string[] = [];
+  if (profile.ageBand) chips.push(profile.ageBand);
+  if (profile.temperament.length) chips.push(...profile.temperament.slice(0, 2));
+  if (profile.interests.length) chips.push(`loves ${profile.interests[0]}`);
+  if (profile.struggles.length) chips.push(`working on ${profile.struggles[0]}`);
 
   return (
     <div className="msg-in space-y-8">
-      {/* boarding-pass style profile card: solid teal stub + warm gradient body */}
-      <div className="overflow-hidden rounded-[1.6rem] shadow-[var(--shadow-soft)]">
-        <div className="flex">
-          <div className="relative hidden w-16 shrink-0 flex-col items-center justify-center gap-3 bg-teal text-cream/90 sm:flex">
-            <span className="absolute left-3 top-4 text-cream/40">✦</span>
-            <span className="absolute bottom-4 right-3 text-xs text-cream/40">✦</span>
-            <span className="grid h-10 w-10 place-items-center rounded-full border border-cream/30">
-              <LeafIcon />
-            </span>
-          </div>
-          <div
-            className="relative flex-1 p-6 sm:p-7"
-            style={{
-              background:
-                "linear-gradient(115deg, #fdfbf6 0%, #f7e7d8 55%, #dfeae6 100%)",
-            }}
-          >
-            <p className="eyebrow">{returning ? "Welcome back" : "Profile saved"}</p>
-            <h2 className="mt-1 text-2xl font-semibold leading-tight text-teal">
-              {returning
-                ? `Good to see you again — here's what I remember about ${profile.childName}`
-                : `Here's what Compass learned about ${profile.childName}`}
-            </h2>
-            <div className="mt-5 grid grid-cols-1 gap-6 sm:grid-cols-2 sm:divide-x sm:divide-teal/15">
-              <dl className="space-y-4 sm:pr-6">
-                {left.map(([k, v]) => (
-                  <Field key={k} label={k} value={v} />
-                ))}
-              </dl>
-              <dl className="space-y-4 sm:pl-6">
-                {right.map(([k, v]) => (
-                  <Field key={k} label={k} value={v} />
-                ))}
-              </dl>
+      {/* warm illustrated dashboard banner with a personal greeting */}
+      <div className="relative min-h-[14rem] overflow-hidden rounded-[1.6rem] shadow-[var(--shadow-soft)] sm:min-h-[15rem]">
+        <Image
+          src="/img/dashboard-banner.png"
+          alt=""
+          fill
+          priority
+          className="object-cover object-right"
+        />
+        {/* cream scrim so the greeting stays legible over the art */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(95deg, #fbf7f0 0%, rgba(251,247,240,0.92) 40%, rgba(251,247,240,0.45) 62%, rgba(251,247,240,0) 80%)",
+          }}
+        />
+        <div className="relative max-w-md p-6 sm:p-8">
+          <p className="eyebrow">{returning ? "Welcome back" : "You're all set"}</p>
+          <h2 className="mt-1 text-[1.7rem] font-semibold leading-tight text-teal sm:text-3xl">
+            {returning ? `Good to see you again` : `${name}'s space is ready`}
+          </h2>
+          <p className="mt-2 max-w-xs text-[0.95rem] leading-relaxed text-ink/75">
+            {returning
+              ? `Here's ${name}'s space — pick up wherever you like.`
+              : `Everything here is shaped around ${name}. Start anywhere below.`}
+          </p>
+          {chips.length > 0 && (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {chips.map((c) => (
+                <span
+                  key={c}
+                  className="rounded-full bg-cream-card/80 px-3 py-1 text-[0.8rem] text-teal shadow-[var(--shadow-card)] ring-1 ring-teal/10"
+                >
+                  {c}
+                </span>
+              ))}
             </div>
-            {notes.length > 0 && (
-              <dl className="mt-5 space-y-2 border-t border-teal/15 pt-4">
-                {notes.map(([k, v]) => (
-                  <div key={k} className="flex flex-wrap gap-x-2 text-sm">
-                    <dt className="font-semibold text-teal/70">{k}:</dt>
-                    <dd className="text-ink/75">{v}</dd>
-                  </div>
-                ))}
-              </dl>
-            )}
-          </div>
+          )}
+          <Link
+            href="/app/memory"
+            className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-teal/80 underline-offset-2 transition hover:text-teal hover:underline"
+          >
+            What I remember about {name}
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M5 12h13M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </Link>
         </div>
       </div>
 

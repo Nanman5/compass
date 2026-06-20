@@ -25,6 +25,8 @@ const MARK_COLOR = "/brand/compass-mark-color.png";
 const FAMILY_ID_KEY = "compass.familyId";
 
 interface PersonalizeResult {
+  relevant?: boolean;
+  message?: string;
   step: string;
   screenNote: string;
   supported: boolean;
@@ -369,6 +371,33 @@ function PasteBox({
 /* ───────────────────────────────────────── result card */
 
 function ResultCard({ result, onReset }: { result: PersonalizeResult; onReset: () => void }) {
+  // Honesty path: the content wasn't actually parenting advice — say so, don't fake a step.
+  if (result.relevant === false) {
+    return (
+      <div className="msg-in space-y-5">
+        <div className="glass rounded-[1.6rem] p-6 text-center sm:p-7">
+          <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-gold/15 text-gold">
+            <ScaleIcon />
+          </span>
+          <p className="eyebrow mt-3">Nothing to personalize here</p>
+          <p className="mx-auto mt-2 max-w-md text-[1.02rem] leading-relaxed text-ink">
+            {result.message ||
+              "This doesn't look like parenting advice, so there's nothing for me to personalize."}
+          </p>
+        </div>
+        <div className="flex items-center justify-center gap-4 pt-1">
+          <button onClick={onReset} className="btn btn-primary">
+            <PasteIcon />
+            Try something else
+          </button>
+          <a href="/app/coach" className="text-sm font-semibold text-teal/70 underline underline-offset-2 hover:text-teal">
+            Talk to Compass instead
+          </a>
+        </div>
+      </div>
+    );
+  }
+
   {
     const { step, screenNote, supported, caution, citations } = result;
 

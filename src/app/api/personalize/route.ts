@@ -42,6 +42,10 @@ import type { ChildProfile, EvidenceSnippet } from "@/lib/types";
 export const runtime = "nodejs";
 
 interface PersonalizeResult {
+  /** False when the pasted content isn't actually parenting advice — be honest, don't invent. */
+  relevant: boolean;
+  /** When not relevant: a short, warm explanation instead of a fabricated step. */
+  message?: string;
   step: string;
   screenNote: string;
   supported: boolean;
@@ -51,6 +55,7 @@ interface PersonalizeResult {
 
 /** Always-usable fallback so the parent never hits a dead end if the model misbehaves. */
 const FALLBACK: PersonalizeResult = {
+  relevant: true,
   step: "Try the smallest version of this advice once today, during a calm moment — not mid-meltdown — and just notice how your child responds. One small test tells you more than a perfect plan.",
   screenNote:
     "If a screen is part of this, agree on a clear end-point together before it starts, and put it away once you reach it.",
@@ -138,9 +143,13 @@ export async function POST(req: Request): Promise<Response> {
 /* ───────────────────────────────────────── prompt building */
 
 function buildSystemPrompt(): string {
-  return `You are Compass, a warm, practical AI parenting companion for parents of children aged 2–8. A parent has pasted parenting advice they found somewhere — a social reel, an article, a screenshot. Your job is to make it useful and safe for THEIR specific child.
+  return `You are Compass, a warm, practical AI parenting companion for parents of children aged 2–8. A parent has pasted something they found somewhere — a social reel, an article, a screenshot. They HOPE it's parenting advice, but it might not be. Your job is to make it useful and safe for THEIR specific child — OR, if it isn't actually parenting advice, to say so honestly.
 
-Do three things:
+FIRST, decide if the pasted content actually contains parenting advice or a parenting idea worth acting on.
+- If it does NOT (it's an unrelated video/song/meme, a personal post, random text, a caption with no actionable parenting idea, or you genuinely can't tell what advice it's giving), set "relevant": false and write a short, warm "message" naming what it seems to be and inviting them to paste real advice or just talk to Compass. DO NOT invent a step. DO NOT pull a topic from the child's profile to manufacture advice. Leave step/screenNote/citations empty. This honesty matters more than being helpful.
+- Only if it DOES contain a genuine parenting idea, set "relevant": true and do the three things below.
+
+Do three things (ONLY when relevant):
 1) EXTRACT the real, usable advice from the pasted content. Ignore engagement bait, fear-mongering, sales pitches, and vague platitudes — keep only the concrete idea.
 2) CHECK it against the TRUSTED EVIDENCE provided to you. Decide whether the core advice is broadly SUPPORTED by that guidance. Be epistemically humble: this is evidence to weigh, not certainty. If the advice contradicts the guidance, overstates certainty, or simply isn't addressed by it, mark it as not supported and explain gently — never alarmingly.
 3) TRANSLATE it into ONE concrete next step tailored to THIS child (their age band, temperament, interests, current struggles). One small, specific action the parent can try today — not a list, not a lecture.
@@ -156,8 +165,10 @@ Guardrails (never break these):
 
 Respond with ONLY a JSON object, no prose, in exactly this shape:
 {
-  "step": "the one concrete next step, addressed warmly to the parent",
-  "screenNote": "the brief when-to-put-the-screen-away note",
+  "relevant": true,
+  "message": "(include ONLY when relevant is false) one or two warm sentences naming what this seems to be and inviting them to paste real advice or talk to Compass",
+  "step": "the one concrete next step, addressed warmly to the parent (empty string when relevant is false)",
+  "screenNote": "the brief when-to-put-the-screen-away note (empty string when relevant is false)",
   "supported": true,
   "caution": "(include ONLY when supported is false) one gentle sentence on what to hold lightly and why",
   "citations": [ { "title": "exact title from the trusted evidence you relied on", "source": "exact source" } ]
@@ -215,6 +226,20 @@ function parseResult(text: string, snippets: EvidenceSnippet[]): PersonalizeResu
   const obj = extractJsonObject(text);
   if (!obj) return FALLBACK;
 
+  // Honesty path: the model judged the content isn't actually parenting advice.
+  if (obj.relevant === false) {
+    return {
+      relevant: false,
+      message:
+        asString(obj.message) ||
+        "This doesn't look like parenting advice, so there's nothing for me to personalize. Paste a tip, article, or screenshot of advice — or just tell me what's going on and I'll help.",
+      step: "",
+      screenNote: "",
+      supported: false,
+      citations: [],
+    };
+  }
+
   const step = asString(obj.step);
   const screenNote = asString(obj.screenNote);
   if (!step && !screenNote) return FALLBACK;
@@ -224,6 +249,7 @@ function parseResult(text: string, snippets: EvidenceSnippet[]): PersonalizeResu
   const citations = validateCitations(obj.citations, snippets);
 
   return {
+    relevant: true,
     step: step || FALLBACK.step,
     screenNote: screenNote || FALLBACK.screenNote,
     supported,
