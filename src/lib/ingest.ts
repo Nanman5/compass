@@ -65,6 +65,11 @@ export async function ingestSource(input: IngestInput): Promise<Ingested> {
 /* ───────────────────────────────────────── link */
 
 async function fetchUrlText(url: string): Promise<string> {
+  // Social video platforms block plain HTML scraping but expose the caption via oEmbed.
+  // (The spoken audio still isn't here — for that the parent can upload the clip.)
+  const oembed = await tryOEmbed(url);
+  if (oembed) return oembed.slice(0, MAX_INGEST_CHARS);
+
   let res: Response;
   try {
     res = await fetch(url, {
@@ -93,6 +98,42 @@ async function fetchUrlText(url: string): Promise<string> {
     throw new IngestError("That page didn't have readable text (some sites block it). Try a screenshot or paste the text.");
   }
   return text.slice(0, MAX_INGEST_CHARS);
+}
+
+/**
+ * For social video platforms (TikTok, YouTube/Shorts), the public oEmbed endpoint returns
+ * the post's caption/title as JSON without bot-blocking. Returns null for everything else
+ * (and on any failure) so the caller falls back to normal HTML fetching.
+ */
+async function tryOEmbed(url: string): Promise<string | null> {
+  let host: string;
+  try {
+    host = new URL(url).hostname.replace(/^www\./, "").toLowerCase();
+  } catch {
+    return null;
+  }
+  let endpoint: string | null = null;
+  if (host.endsWith("tiktok.com")) endpoint = `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`;
+  else if (host.endsWith("youtube.com") || host === "youtu.be")
+    endpoint = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`;
+  if (!endpoint) return null;
+
+  try {
+    const res = await fetch(endpoint, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { title?: string; author_name?: string };
+    const parts = [data.title, data.author_name ? `(by ${data.author_name})` : ""].filter(Boolean);
+    const text = parts.join(" ").trim();
+    if (text.length < 8) {
+      throw new IngestError(
+        "That video's caption was too short to read. Download the clip and add it with “Screenshot or clip”, or paste the advice text.",
+      );
+    }
+    return `Caption from the video the parent saw: ${text}`;
+  } catch (err) {
+    if (err instanceof IngestError) throw err;
+    return null; // network/parse hiccup → fall back to HTML fetch
+  }
 }
 
 /** Pull OG title/description (great for reels/articles) + visible body text. */

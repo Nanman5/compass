@@ -172,12 +172,28 @@ class GeminiClient implements LlmClient {
 /** Map our ToolDef[] to Gemini functionDeclarations (undefined when no tools). */
 function mapToolsToGemini(tools?: ToolDef[]): FunctionDeclaration[] | undefined {
   if (!tools || tools.length === 0) return undefined;
-  // `parameters` is our provider-agnostic JSON Schema; cast at the SDK boundary.
+  // `parameters` is our provider-agnostic JSON Schema. Gemini's function-declaration schema
+  // is a strict subset of JSON Schema and REJECTS `additionalProperties` (and `$schema`) —
+  // it 400s the whole call. Strip those keys recursively at the SDK boundary.
   return tools.map((t) => ({
     name: t.name,
     description: t.description,
-    parameters: t.parameters as unknown as FunctionDeclaration["parameters"],
+    parameters: stripUnsupportedSchemaKeys(t.parameters) as unknown as FunctionDeclaration["parameters"],
   }));
+}
+
+/** Deep-clone a JSON Schema, dropping keys Gemini's tool schema doesn't accept. */
+function stripUnsupportedSchemaKeys(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(stripUnsupportedSchemaKeys);
+  if (value && typeof value === "object") {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      if (k === "additionalProperties" || k === "$schema") continue;
+      out[k] = stripUnsupportedSchemaKeys(v);
+    }
+    return out;
+  }
+  return value;
 }
 
 /** Collapse our ChatMessage[] into Gemini `contents` (user/model + functionResponse parts). */
