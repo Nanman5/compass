@@ -524,9 +524,15 @@ function Composer({
 
 /* ───────────────────────────────────────── completion recap + coming soon */
 
-type ComingIcon = "step" | "graph" | "bookmark" | "sparkle" | "calendar";
+type ComingIcon = "step" | "graph" | "bookmark" | "sparkle" | "calendar" | "help";
 
 const TOOLS: { title: string; body: string; icon: ComingIcon; href: string }[] = [
+  {
+    title: "Help me now",
+    body: "In a hard moment? Tap to talk — a calm voice helps you steady yourself, then your child.",
+    icon: "help",
+    href: "/app/help",
+  },
   {
     title: "Your one next step",
     body: "Describe a struggle — Compass returns one concrete action, plus when to put the screen away.",
@@ -700,6 +706,12 @@ function ComingSoonIcon({ kind }: { kind: ComingIcon }) {
         <path d="M4 16l5-5 4 3 7-8" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
         <circle cx="9" cy="11" r="1.4" fill="currentColor" />
         <circle cx="13" cy="14" r="1.4" fill="currentColor" />
+      </svg>
+    );
+  if (kind === "help")
+    return (
+      <svg {...common}>
+        <path d="M12 20s-6.5-4.2-6.5-9A3.5 3.5 0 0 1 12 8a3.5 3.5 0 0 1 6.5 3c0 4.8-6.5 9-6.5 9z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
       </svg>
     );
   if (kind === "sparkle")
