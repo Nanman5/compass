@@ -60,25 +60,15 @@ export default function AppGate() {
     setStatus("guest");
   }, []);
 
-  const signOut = useCallback(async () => {
-    await fetch("/api/auth/signout", { method: "POST" }).catch(() => {});
-    localStorage.removeItem(GUEST_KEY);
-    setUser(null);
-    setStatus("signin");
-  }, []);
-
   if (status === "loading") return <Splash />;
 
   if (status === "signin") {
     return <SignIn configured={configured} note={authNote} onGuest={continueAsGuest} />;
   }
 
-  return (
-    <>
-      <OnboardingChat familyId={user ? `g:${user.sub}` : undefined} />
-      {user && <UserChip user={user} onSignOut={signOut} />}
-    </>
-  );
+  // Account control (sign out / sign in) now lives inside the app shell chrome
+  // (mobile header + desktop rail), so there's no floating overlay to collide with content.
+  return <OnboardingChat familyId={user ? `g:${user.sub}` : undefined} />;
 }
 
 /* ───────────────────────────────────────── splash */
@@ -137,35 +127,6 @@ function SignIn({
           We only use your name and email to save your family&apos;s profile. Nothing is shared.
         </p>
       </div>
-    </div>
-  );
-}
-
-/* ───────────────────────────────────────── signed-in chip */
-
-function UserChip({ user, onSignOut }: { user: AuthUser; onSignOut: () => void }) {
-  return (
-    // NOTE: positioning lives on this OUTER wrapper, not on the `.glass` element — `.glass`
-    // sets position:relative and (being declared after Tailwind's utilities) would override
-    // a `fixed`/`absolute` utility placed on the same element.
-    <div className="fixed right-4 top-4 z-50">
-    <div className="glass flex items-center gap-2 rounded-full py-1 pl-1 pr-1">
-      {user.picture ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={user.picture} alt="" className="h-8 w-8 rounded-full" referrerPolicy="no-referrer" />
-      ) : (
-        <span className="grid h-8 w-8 place-items-center rounded-full bg-teal text-xs font-bold text-cream">
-          {(user.name || user.email || "?").slice(0, 1).toUpperCase()}
-        </span>
-      )}
-      <button
-        onClick={onSignOut}
-        className="rounded-full px-3 py-1 text-xs font-semibold text-teal/80 hover:text-teal"
-        title={`Signed in as ${user.email}`}
-      >
-        Sign out
-      </button>
-    </div>
     </div>
   );
 }

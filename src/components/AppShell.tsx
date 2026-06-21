@@ -12,7 +12,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 export type TabKey = "home" | "today" | "drop" | "checkin" | "toolkit";
 
@@ -52,9 +52,62 @@ function TabIcon({ kind }: { kind: TabKey }) {
   }
 }
 
+/** Account state shared by the header (mobile) and the rail (desktop). */
+interface MeUser {
+  name?: string;
+  email?: string;
+  picture?: string;
+}
+function useAccount() {
+  const [user, setUser] = useState<MeUser | null>(null);
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((d) => {
+        if (alive) {
+          setUser(d?.user ?? null);
+          setLoaded(true);
+        }
+      })
+      .catch(() => alive && setLoaded(true));
+    return () => {
+      alive = false;
+    };
+  }, []);
+  const signOut = async () => {
+    try {
+      await fetch("/api/auth/signout", { method: "POST" });
+    } catch {
+      /* ignore */
+    }
+    try {
+      localStorage.removeItem("compass.guest");
+    } catch {
+      /* ignore */
+    }
+    window.location.href = "/";
+  };
+  return { user, loaded, signOut };
+}
+
+function Avatar({ user }: { user: MeUser }) {
+  if (user.picture) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={user.picture} alt="" referrerPolicy="no-referrer" className="h-8 w-8 rounded-full" />;
+  }
+  return (
+    <span className="grid h-8 w-8 place-items-center rounded-full bg-teal text-xs font-bold text-cream">
+      {(user.name || user.email || "?").slice(0, 1).toUpperCase()}
+    </span>
+  );
+}
+
 /** Desktop-only left icon rail. Fixed to the viewport's left edge so the page content can
  *  stay centered in the FULL viewport (the rail floats in the left margin on wide screens). */
 export function Sidebar({ active }: { active: TabKey }) {
+  const { user, loaded, signOut } = useAccount();
   return (
     <nav className="fixed left-0 top-0 z-30 hidden h-dvh w-24 flex-col items-center gap-1 border-r border-teal/10 bg-cream-card/60 py-6 backdrop-blur-sm lg:flex">
       <Link href="/app" className="mb-5">
@@ -76,7 +129,45 @@ export function Sidebar({ active }: { active: TabKey }) {
           </Link>
         );
       })}
+      {/* account at the foot of the rail */}
+      {loaded && (
+        <div className="mt-auto flex flex-col items-center gap-1.5 pt-3">
+          {user ? (
+            <>
+              <Avatar user={user} />
+              <button onClick={signOut} className="text-[0.6rem] font-semibold text-teal/55 transition hover:text-teal">
+                Sign out
+              </button>
+            </>
+          ) : (
+            <a href="/api/auth/google" className="text-[0.6rem] font-semibold text-teal/55 transition hover:text-teal">
+              Sign in
+            </a>
+          )}
+        </div>
+      )}
     </nav>
+  );
+}
+
+/** In-flow account control for the mobile header (scrolls with content — never overlaps). */
+function MobileAccount() {
+  const { user, loaded, signOut } = useAccount();
+  if (!loaded) return <span className="h-8 w-8" />;
+  if (!user) {
+    return (
+      <a href="/api/auth/google" className="text-sm font-semibold text-teal/70 transition hover:text-teal">
+        Sign in
+      </a>
+    );
+  }
+  return (
+    <div className="flex items-center gap-2">
+      <Avatar user={user} />
+      <button onClick={signOut} className="text-xs font-semibold text-teal/70 transition hover:text-teal">
+        Sign out
+      </button>
+    </div>
   );
 }
 
@@ -133,7 +224,17 @@ export default function AppShell({
       {/* Reserve the rail's width on desktop (lg:pl-24) so content can never slip under the
           fixed sidebar, then center the content within the remaining space. */}
       <div className="relative z-10 lg:pl-24">
-        <main className={`mx-auto w-full ${maxWidth} px-4 pb-28 pt-5 sm:px-6 lg:pb-14`}>
+        <main className={`mx-auto w-full ${maxWidth} px-4 pb-28 pt-4 sm:px-6 lg:pb-14 lg:pt-6`}>
+          {/* mobile header: logo + account, in normal flow so it scrolls (no fixed overlay) */}
+          <div className="mb-5 flex items-center justify-between lg:hidden">
+            <Link href="/app" className="flex items-center gap-2">
+              <Image src={MARK} alt="" width={24} height={24} />
+              <span className="text-lg font-semibold tracking-tight text-teal" style={{ fontFamily: "var(--font-display)" }}>
+                Compass
+              </span>
+            </Link>
+            <MobileAccount />
+          </div>
           {children}
         </main>
       </div>

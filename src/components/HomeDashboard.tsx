@@ -36,17 +36,6 @@ export default function HomeDashboard({
   return (
     <AppShell active="home" maxWidth="max-w-2xl lg:max-w-4xl">
       <div className="space-y-6">
-            {/* top row */}
-            <div className="flex items-center gap-2">
-              <Image src="/brand/compass-mark-color.png" alt="" width={26} height={26} />
-              <span
-                className="text-lg font-semibold tracking-tight text-teal"
-                style={{ fontFamily: "var(--font-display)" }}
-              >
-                Compass
-              </span>
-            </div>
-
             {/* greeting */}
             <div>
               <p className="eyebrow">{returning ? "Welcome back" : "You're all set"}</p>
