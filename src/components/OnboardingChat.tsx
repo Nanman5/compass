@@ -237,6 +237,26 @@ export default function OnboardingChat({ familyId: familyIdProp }: { familyId?: 
     }
   };
 
+  // Start onboarding over from the dashboard, overwriting the existing profile. We only spend
+  // tokens on the kickoff greeting here — deliberately, because the parent asked for it.
+  const restart = useCallback(async () => {
+    serverState.current = null;
+    setMessages([]);
+    setProfile(null);
+    setReturning(false);
+    setDone(false);
+    setError(null);
+    setPending(true);
+    try {
+      const data = await turn(KICKOFF);
+      applyResponse(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't reach Compass");
+    } finally {
+      setPending(false);
+    }
+  }, [turn, applyResponse]);
+
   return (
     <div className="relative h-full w-full overflow-hidden bg-cream">
       {/* living ambient backdrop */}
@@ -262,7 +282,7 @@ export default function OnboardingChat({ familyId: familyIdProp }: { familyId?: 
           {done && profile ? (
             // Results screen: just the recap, no transcript / greeting bubble.
             <div className="mx-auto w-full max-w-4xl px-4 pb-12 pt-2 sm:px-6">
-              <Recap profile={profile} returning={returning} />
+              <Recap profile={profile} returning={returning} onRestart={() => void restart()} />
             </div>
           ) : (
             <div className="mx-auto w-full max-w-2xl space-y-4 px-4 pb-6 pt-1 sm:px-6">
@@ -587,7 +607,15 @@ const TOOLS: { title: string; body: string; icon: ComingIcon; href: string }[] =
   },
 ];
 
-function Recap({ profile, returning }: { profile: ChildProfile; returning?: boolean }) {
+function Recap({
+  profile,
+  returning,
+  onRestart,
+}: {
+  profile: ChildProfile;
+  returning?: boolean;
+  onRestart?: () => void;
+}) {
   const name = profile.childName || "your little one";
   // Compact summary chips — a glance at who Compass is holding (details live in /app/memory).
   const chips: string[] = [];
@@ -681,11 +709,45 @@ function Recap({ profile, returning }: { profile: ChildProfile; returning?: bool
       </div>
 
       {/* footer */}
-      <div className="pt-2 text-center">
-        <span className="text-coral">♡</span>
-        <p className="mt-1 text-sm italic text-teal/70" style={{ fontFamily: "var(--font-display)" }}>
-          Guidance for your family. Built around you.
-        </p>
+      <div className="space-y-4 pt-2 text-center">
+        {onRestart && <RestartOnboarding name={name} onRestart={onRestart} />}
+        <div>
+          <span className="text-coral">♡</span>
+          <p className="mt-1 text-sm italic text-teal/70" style={{ fontFamily: "var(--font-display)" }}>
+            Guidance for your family. Built around you.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Quiet "start onboarding over" affordance with a one-tap confirm, since it overwrites. */
+function RestartOnboarding({ name, onRestart }: { name: string; onRestart: () => void }) {
+  const [confirming, setConfirming] = useState(false);
+  if (!confirming) {
+    return (
+      <button
+        onClick={() => setConfirming(true)}
+        className="text-xs font-semibold text-teal/55 underline underline-offset-2 transition hover:text-teal"
+      >
+        Things changed? Redo {name}&apos;s onboarding
+      </button>
+    );
+  }
+  return (
+    <div className="mx-auto flex max-w-sm flex-col items-center gap-2.5 rounded-2xl border border-teal/15 bg-cream-card/70 px-5 py-4">
+      <p className="text-sm leading-relaxed text-ink/75">
+        This starts a fresh conversation and overwrites {name}&apos;s current profile. Your saved
+        learnings stay.
+      </p>
+      <div className="flex gap-2.5">
+        <button onClick={() => setConfirming(false)} className="btn btn-ghost px-5 py-2 text-sm">
+          Keep it
+        </button>
+        <button onClick={onRestart} className="btn btn-primary px-5 py-2 text-sm">
+          Start fresh
+        </button>
       </div>
     </div>
   );

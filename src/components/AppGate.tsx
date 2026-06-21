@@ -145,7 +145,11 @@ function SignIn({
 
 function UserChip({ user, onSignOut }: { user: AuthUser; onSignOut: () => void }) {
   return (
-    <div className="glass fixed right-4 top-4 z-50 flex items-center gap-2 rounded-full py-1 pl-1 pr-1">
+    // NOTE: positioning lives on this OUTER wrapper, not on the `.glass` element — `.glass`
+    // sets position:relative and (being declared after Tailwind's utilities) would override
+    // a `fixed`/`absolute` utility placed on the same element.
+    <div className="fixed right-4 top-4 z-50">
+    <div className="glass flex items-center gap-2 rounded-full py-1 pl-1 pr-1">
       {user.picture ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={user.picture} alt="" className="h-8 w-8 rounded-full" referrerPolicy="no-referrer" />
@@ -161,6 +165,7 @@ function UserChip({ user, onSignOut }: { user: AuthUser; onSignOut: () => void }
       >
         Sign out
       </button>
+    </div>
     </div>
   );
 }
