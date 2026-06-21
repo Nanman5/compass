@@ -1,18 +1,20 @@
 "use client";
 
 /**
- * /app/weekly — the live Weekly Drop.
+ * /app/weekly — the live "This week's drop".
  *
  * Resolves this browser's familyId (signed-in Google account → "g:<sub>", else the
  * per-browser demo id in localStorage, matching onboarding), fetches GET /api/weekly,
- * and renders the "This week for {child}" card. Client component because it owns the
- * familyId resolution + fetch lifecycle (loading / error / loaded).
+ * and renders the magazine-style drop. Client component because it owns the familyId
+ * resolution + fetch lifecycle (loading / error / loaded).
  *
- * Visuals live in WeeklyDrop.tsx; this file is just the page shell + ambient aurora.
+ * The shared AppShell provides the aurora background, desktop sidebar, and mobile tab bar;
+ * the readable drop layout lives in WeeklyDrop.tsx.
  */
 
 import { useCallback, useEffect, useState } from "react";
 
+import AppShell from "@/components/AppShell";
 import {
   WeeklyDropCard,
   WeeklyDropError,
@@ -68,25 +70,10 @@ export default function WeeklyPage() {
   }, [load]);
 
   return (
-    <main className="relative grid min-h-dvh place-items-center overflow-hidden bg-cream px-5 py-12">
-      <Aurora />
-      <div className="relative z-10 flex w-full justify-center">
-        {phase.state === "loading" && <WeeklyDropSkeleton />}
-        {phase.state === "error" && <WeeklyDropError onRetry={() => void load()} />}
-        {phase.state === "ready" && <WeeklyDropCard data={phase.data} />}
-      </div>
-    </main>
-  );
-}
-
-/** Ambient drifting color fields behind the glass card (shared look with /app). */
-function Aurora() {
-  return (
-    <div className="aurora" aria-hidden="true">
-      <div className="blob blob-coral" />
-      <div className="blob blob-teal" />
-      <div className="blob blob-gold" />
-      <div className="blob blob-rose" />
-    </div>
+    <AppShell active="drop">
+      {phase.state === "loading" && <WeeklyDropSkeleton />}
+      {phase.state === "error" && <WeeklyDropError onRetry={() => void load()} />}
+      {phase.state === "ready" && <WeeklyDropCard data={phase.data} />}
+    </AppShell>
   );
 }
