@@ -1,11 +1,20 @@
+import { cookies } from "next/headers";
 import Link from "next/link";
 import Image from "next/image";
+import { redirect } from "next/navigation";
+
 import { CompassWordmark } from "@/components/CompassStar";
 import { Icon, type IconName } from "@/components/Icon";
+import { readSession, SESSION_COOKIE } from "@/lib/auth";
 
 const NAV = ["Features", "How it works", "For families", "Pricing", "Resources"];
 
-export default function Home() {
+export default async function Home() {
+  // Already signed in with a valid (unexpired, untampered) session? Skip the marketing page
+  // and go straight to the app.
+  const jar = await cookies();
+  if (readSession(jar.get(SESSION_COOKIE)?.value)) redirect("/app");
+
   return (
     <div className="flex flex-col min-h-screen overflow-x-hidden bg-cream">
       <SiteNav />
