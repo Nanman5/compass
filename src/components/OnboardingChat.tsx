@@ -15,9 +15,9 @@
  */
 
 import Image from "next/image";
-import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import HomeDashboard from "@/components/HomeDashboard";
 import VoiceOnboarding from "@/components/VoiceOnboarding";
 import type { ChildProfile, OnboardingState } from "@/lib/types";
 
@@ -135,11 +135,13 @@ export default function OnboardingChat({ familyId: familyIdProp }: { familyId?: 
     }
   }, [pushMessage]);
 
-  // Lock the page to a definite full-height, no-scroll shell while /app is mounted.
-  // This makes `h-full` resolve in Safari (a `min-h-full` body is an INDEFINITE height,
-  // so percentage/auto heights collapse there) and keeps the document from scrolling —
-  // the message pane does its own scrolling. Restored on unmount so the landing is fine.
+  // Lock the page to a definite full-height, no-scroll shell while the CHAT is showing.
+  // This makes `h-full` resolve in Safari (a `min-h-full` body is an INDEFINITE height, so
+  // percentage/auto heights collapse there) and keeps the document from scrolling — the
+  // message pane scrolls itself. Once onboarding is done we hand off to the dashboard, which
+  // is a normal scrolling page, so we unlock then (and on unmount).
   useEffect(() => {
+    if (done) return;
     const html = document.documentElement;
     const body = document.body;
     const prev = { htmlH: html.style.height, bodyH: body.style.height, bodyO: body.style.overflow };
@@ -151,7 +153,7 @@ export default function OnboardingChat({ familyId: familyIdProp }: { familyId?: 
       body.style.height = prev.bodyH;
       body.style.overflow = prev.bodyO;
     };
-  }, []);
+  }, [done]);
 
   // Kick off the conversation exactly once (guard against React StrictMode double-invoke,
   // which otherwise fires two kickoffs → two greeting bubbles).
@@ -257,6 +259,17 @@ export default function OnboardingChat({ familyId: familyIdProp }: { familyId?: 
     }
   }, [turn, applyResponse]);
 
+  // Onboarding complete → hand off to the full Home dashboard (a normal scrolling page).
+  if (done && profile) {
+    return (
+      <HomeDashboard
+        profile={profile}
+        returning={returning}
+        onRestart={() => void restart()}
+      />
+    );
+  }
+
   return (
     <div className="relative h-full w-full overflow-hidden bg-cream">
       {/* living ambient backdrop */}
@@ -270,21 +283,18 @@ export default function OnboardingChat({ familyId: familyIdProp }: { familyId?: 
       {/* Full-width column so the scrollbar sits at the window's right edge; each
           section centers its own content to max-w-2xl. */}
       <div className="relative z-10 flex h-full w-full flex-col">
-        <div className="mx-auto w-full max-w-2xl shrink-0 px-4 sm:px-6">
-          <Presence thinking={pending} done={done} />
-        </div>
+        {!done && (
+          <div className="mx-auto w-full max-w-2xl shrink-0 px-4 sm:px-6">
+            <Presence thinking={pending} done={done} />
+          </div>
+        )}
 
         <main
           ref={scrollRef}
           className="min-h-0 flex-1 overflow-y-auto overscroll-contain scroll-smooth"
           aria-live="polite"
         >
-          {done && profile ? (
-            // Results screen: just the recap, no transcript / greeting bubble.
-            <div className="mx-auto w-full max-w-4xl px-4 pb-12 pt-2 sm:px-6">
-              <Recap profile={profile} returning={returning} onRestart={() => void restart()} />
-            </div>
-          ) : (
+          {(
             <div className="mx-auto w-full max-w-2xl space-y-4 px-4 pb-6 pt-1 sm:px-6">
               {messages.map((m) =>
                 m.role === "assistant" ? (
@@ -308,7 +318,7 @@ export default function OnboardingChat({ familyId: familyIdProp }: { familyId?: 
                 return null;
               })()}
 
-              {pending && <TypingBubble />}
+              {pending && (messages.length === 0 ? <GreetingSkeleton /> : <TypingBubble />)}
               {error && <ErrorBubble text={error} onRetry={() => void send()} />}
             </div>
           )}
@@ -407,6 +417,23 @@ function TypingBubble() {
             style={{ animationDelay: `${i * 0.16}s` }}
           />
         ))}
+      </div>
+    </div>
+  );
+}
+
+/** First-load placeholder: a calm shimmering bubble while Compass writes its opening line —
+ *  gentler than bouncing dots on an empty screen. */
+function GreetingSkeleton() {
+  return (
+    <div className="msg-in flex items-start gap-2.5">
+      <MarkAvatar className="mt-0.5 shrink-0 opacity-60" />
+      <div className="glass w-full max-w-[85%] rounded-3xl rounded-tl-md px-5 py-4">
+        <div className="space-y-2.5 animate-pulse">
+          <div className="h-3.5 w-[92%] rounded-full bg-teal/10" />
+          <div className="h-3.5 w-[78%] rounded-full bg-teal/10" />
+          <div className="h-3.5 w-[55%] rounded-full bg-teal/10" />
+        </div>
       </div>
     </div>
   );
@@ -565,250 +592,3 @@ function Composer({
 }
 
 /* ───────────────────────────────────────── completion recap + coming soon */
-
-type ComingIcon = "step" | "graph" | "bookmark" | "sparkle" | "calendar" | "help";
-
-const TOOLS: { title: string; body: string; icon: ComingIcon; href: string }[] = [
-  {
-    title: "Help me now",
-    body: "In a hard moment? Tap to talk — a calm voice helps you steady yourself, then your child.",
-    icon: "help",
-    href: "/app/help",
-  },
-  {
-    title: "Your one next step",
-    body: "Describe a struggle — Compass returns one concrete action, plus when to put the screen away.",
-    icon: "step",
-    href: "/app/coach",
-  },
-  {
-    title: "Paste & personalize",
-    body: "Drop in a reel or article; Compass checks it against trusted evidence and hands back the one thing worth trying.",
-    icon: "sparkle",
-    href: "/app/paste",
-  },
-  {
-    title: "This week's drop",
-    body: "A study, a tip, and an activity matched to your child right now.",
-    icon: "calendar",
-    href: "/app/weekly",
-  },
-  {
-    title: "Win logger",
-    body: "A quick “how did it go?” so guidance sharpens to what actually works for your child.",
-    icon: "graph",
-    href: "/app/wins",
-  },
-  {
-    title: "What Compass remembers",
-    body: "See and clear everything Compass has learned about your family. Your data, your call.",
-    icon: "bookmark",
-    href: "/app/memory",
-  },
-];
-
-function Recap({
-  profile,
-  returning,
-  onRestart,
-}: {
-  profile: ChildProfile;
-  returning?: boolean;
-  onRestart?: () => void;
-}) {
-  const name = profile.childName || "your little one";
-  // Compact summary chips — a glance at who Compass is holding (details live in /app/memory).
-  const chips: string[] = [];
-  if (profile.ageBand) chips.push(profile.ageBand);
-  if (profile.temperament.length) chips.push(...profile.temperament.slice(0, 2));
-  if (profile.interests.length) chips.push(`loves ${profile.interests[0]}`);
-  if (profile.struggles.length) chips.push(`working on ${profile.struggles[0]}`);
-
-  return (
-    <div className="msg-in space-y-8">
-      {/* warm illustrated dashboard banner with a personal greeting */}
-      <div className="relative min-h-[14rem] overflow-hidden rounded-[1.6rem] shadow-[var(--shadow-soft)] sm:min-h-[15rem]">
-        <Image
-          src="/img/dashboard-banner.png"
-          alt=""
-          fill
-          priority
-          className="object-cover object-right"
-        />
-        {/* cream scrim so the greeting stays legible over the art */}
-        <div
-          aria-hidden="true"
-          className="absolute inset-0"
-          style={{
-            background:
-              "linear-gradient(95deg, #fbf7f0 0%, rgba(251,247,240,0.92) 40%, rgba(251,247,240,0.45) 62%, rgba(251,247,240,0) 80%)",
-          }}
-        />
-        <div className="relative max-w-md p-6 sm:p-8">
-          <p className="eyebrow">{returning ? "Welcome back" : "You're all set"}</p>
-          <h2 className="mt-1 text-[1.7rem] font-semibold leading-tight text-teal sm:text-3xl">
-            {returning ? `Good to see you again` : `${name}'s space is ready`}
-          </h2>
-          <p className="mt-2 max-w-xs text-[0.95rem] leading-relaxed text-ink/75">
-            {returning
-              ? `Here's ${name}'s space — pick up wherever you like.`
-              : `Everything here is shaped around ${name}. Start anywhere below.`}
-          </p>
-          {chips.length > 0 && (
-            <div className="mt-4 flex flex-wrap gap-2">
-              {chips.map((c) => (
-                <span
-                  key={c}
-                  className="rounded-full bg-cream-card/80 px-3 py-1 text-[0.8rem] text-teal shadow-[var(--shadow-card)] ring-1 ring-teal/10"
-                >
-                  {c}
-                </span>
-              ))}
-            </div>
-          )}
-          <Link
-            href="/app/memory"
-            className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-teal/80 underline-offset-2 transition hover:text-teal hover:underline"
-          >
-            What I remember about {name}
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M5 12h13M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </Link>
-        </div>
-      </div>
-
-      {/* your toolkit — live feature links */}
-      <div>
-        <div className="flex items-center gap-4">
-          <span className="eyebrow shrink-0">Your toolkit</span>
-          <span className="h-px flex-1 bg-teal/15" />
-        </div>
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {TOOLS.map((c) => (
-            <Link
-              key={c.title}
-              href={c.href}
-              className="glass group flex flex-col rounded-2xl p-5 transition duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-soft)]"
-            >
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-sage-soft/50 text-teal">
-                <ComingSoonIcon kind={c.icon} />
-              </span>
-              <h3 className="mt-3 text-[0.98rem] font-semibold leading-snug text-teal">{c.title}</h3>
-              <p className="mt-1.5 flex-1 text-[0.84rem] leading-relaxed text-ink/65">{c.body}</p>
-              <div className="mt-4 flex justify-end">
-                <span className="grid h-9 w-9 place-items-center rounded-full border border-teal/20 text-teal/70 transition group-hover:border-teal group-hover:bg-teal/5">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M5 12h13M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </span>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </div>
-
-      {/* footer */}
-      <div className="space-y-4 pt-2 text-center">
-        {onRestart && <RestartOnboarding name={name} onRestart={onRestart} />}
-        <div>
-          <span className="text-coral">♡</span>
-          <p className="mt-1 text-sm italic text-teal/70" style={{ fontFamily: "var(--font-display)" }}>
-            Guidance for your family. Built around you.
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/** Quiet "start onboarding over" affordance with a one-tap confirm, since it overwrites. */
-function RestartOnboarding({ name, onRestart }: { name: string; onRestart: () => void }) {
-  const [confirming, setConfirming] = useState(false);
-  if (!confirming) {
-    return (
-      <button
-        onClick={() => setConfirming(true)}
-        className="text-xs font-semibold text-teal/55 underline underline-offset-2 transition hover:text-teal"
-      >
-        Things changed? Redo {name}&apos;s onboarding
-      </button>
-    );
-  }
-  return (
-    <div className="mx-auto flex max-w-sm flex-col items-center gap-2.5 rounded-2xl border border-teal/15 bg-cream-card/70 px-5 py-4">
-      <p className="text-sm leading-relaxed text-ink/75">
-        This starts a fresh conversation and overwrites {name}&apos;s current profile. Your saved
-        learnings stay.
-      </p>
-      <div className="flex gap-2.5">
-        <button onClick={() => setConfirming(false)} className="btn btn-ghost px-5 py-2 text-sm">
-          Keep it
-        </button>
-        <button onClick={onRestart} className="btn btn-primary px-5 py-2 text-sm">
-          Start fresh
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function Field({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <dt className="text-[0.68rem] font-bold uppercase tracking-wide text-muted">{label}</dt>
-      <dd className="mt-0.5 text-[0.98rem] text-ink">{value}</dd>
-    </div>
-  );
-}
-
-function LeafIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M19 5c0 8-5.4 13-13 13 0-8 5.4-13 13-13Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
-      <path d="M7 17C10 13 13 10 17 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function ComingSoonIcon({ kind }: { kind: ComingIcon }) {
-  const common = { width: 18, height: 18, viewBox: "0 0 24 24", fill: "none", "aria-hidden": true } as const;
-  if (kind === "step")
-    return (
-      <svg {...common}>
-        <path d="M4 19h5v-5h5V9h5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    );
-  if (kind === "graph")
-    return (
-      <svg {...common}>
-        <path d="M4 16l5-5 4 3 7-8" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-        <circle cx="9" cy="11" r="1.4" fill="currentColor" />
-        <circle cx="13" cy="14" r="1.4" fill="currentColor" />
-      </svg>
-    );
-  if (kind === "help")
-    return (
-      <svg {...common}>
-        <path d="M12 20s-6.5-4.2-6.5-9A3.5 3.5 0 0 1 12 8a3.5 3.5 0 0 1 6.5 3c0 4.8-6.5 9-6.5 9z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
-      </svg>
-    );
-  if (kind === "sparkle")
-    return (
-      <svg {...common}>
-        <path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
-      </svg>
-    );
-  if (kind === "calendar")
-    return (
-      <svg {...common}>
-        <rect x="4" y="5" width="16" height="15" rx="2" stroke="currentColor" strokeWidth="1.6" />
-        <path d="M4 9h16M8 3v4M16 3v4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-      </svg>
-    );
-  return (
-    <svg {...common}>
-      <path d="M7 4h10v16l-5-3-5 3V4z" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
