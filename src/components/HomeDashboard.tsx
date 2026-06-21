@@ -34,7 +34,7 @@ export default function HomeDashboard({
     : "We're still getting to know them, little by little.";
 
   return (
-    <AppShell active="home">
+    <AppShell active="home" maxWidth="max-w-2xl lg:max-w-4xl">
       <div className="space-y-6">
             {/* top row */}
             <div className="flex items-center gap-2">
@@ -63,40 +63,43 @@ export default function HomeDashboard({
               <Image src={BANNER} alt="" fill priority className="object-cover" />
             </div>
 
-            {/* your child */}
-            <div className="glass rounded-[1.4rem] p-5">
-              <div className="flex items-center gap-3">
-                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-sage-soft/60 text-base font-bold text-teal">
-                  {name.slice(0, 1).toUpperCase()}
-                </span>
-                <div className="min-w-0">
-                  <h3 className="text-[1.02rem] font-semibold text-teal">Your child, {name}</h3>
-                  {ageLine && <p className="text-[0.82rem] text-ink/60">{ageLine}</p>}
+            {/* child + reminder — stacked on mobile, side-by-side on desktop */}
+            <div className="grid gap-4 lg:grid-cols-2">
+              {/* your child */}
+              <div className="glass flex flex-col rounded-[1.4rem] p-5">
+                <div className="flex items-center gap-3">
+                  <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-sage-soft/60 text-base font-bold text-teal">
+                    {name.slice(0, 1).toUpperCase()}
+                  </span>
+                  <div className="min-w-0">
+                    <h3 className="text-[1.02rem] font-semibold text-teal">Your child, {name}</h3>
+                    {ageLine && <p className="text-[0.82rem] text-ink/60">{ageLine}</p>}
+                  </div>
                 </div>
+                <p className="mt-3 flex-1 text-[0.9rem] leading-relaxed text-ink/75">{lovesLine}</p>
+                <Link
+                  href="/app/memory"
+                  className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-teal/80 transition hover:text-teal"
+                >
+                  View {name}&apos;s profile
+                  <Arrow />
+                </Link>
               </div>
-              <p className="mt-3 text-[0.9rem] leading-relaxed text-ink/75">{lovesLine}</p>
-              <Link
-                href="/app/memory"
-                className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-teal/80 transition hover:text-teal"
-              >
-                View {name}&apos;s profile
-                <Arrow />
-              </Link>
-            </div>
 
-            {/* gentle reminder */}
-            <div
-              className="flex items-center gap-3 rounded-[1.4rem] p-5"
-              style={{ background: "linear-gradient(115deg, #fdfbf6 0%, #eef2ec 100%)" }}
-            >
-              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-sage-soft/60 text-teal">
-                <LeafIcon />
-              </span>
-              <div>
-                <p className="text-[0.95rem] font-semibold text-teal">Today&apos;s gentle reminder</p>
-                <p className="text-[0.88rem] leading-relaxed text-ink/70">
-                  Small moments today build big confidence tomorrow.
-                </p>
+              {/* gentle reminder */}
+              <div
+                className="flex items-center gap-3 rounded-[1.4rem] p-5"
+                style={{ background: "linear-gradient(115deg, #fdfbf6 0%, #eef2ec 100%)" }}
+              >
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-sage-soft/60 text-teal">
+                  <LeafIcon />
+                </span>
+                <div>
+                  <p className="text-[0.95rem] font-semibold text-teal">Today&apos;s gentle reminder</p>
+                  <p className="text-[0.88rem] leading-relaxed text-ink/70">
+                    Small moments today build big confidence tomorrow.
+                  </p>
+                </div>
               </div>
             </div>
 

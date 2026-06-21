@@ -52,10 +52,11 @@ function TabIcon({ kind }: { kind: TabKey }) {
   }
 }
 
-/** Desktop-only left icon rail. */
+/** Desktop-only left icon rail. Fixed to the viewport's left edge so the page content can
+ *  stay centered in the FULL viewport (the rail floats in the left margin on wide screens). */
 export function Sidebar({ active }: { active: TabKey }) {
   return (
-    <nav className="sticky top-0 hidden h-dvh w-24 shrink-0 flex-col items-center gap-1 border-r border-teal/10 bg-cream-card/40 py-6 lg:flex">
+    <nav className="fixed left-0 top-0 z-30 hidden h-dvh w-24 flex-col items-center gap-1 border-r border-teal/10 bg-cream-card/60 py-6 backdrop-blur-sm lg:flex">
       <Link href="/app" className="mb-5">
         <Image src={MARK} alt="Compass" width={32} height={32} />
       </Link>
@@ -127,13 +128,14 @@ export default function AppShell({
         <div className="blob blob-rose" />
       </div>
 
-      <div className="relative z-10 flex">
-        <Sidebar active={active} />
-        <div className="min-w-0 flex-1">
-          <main className={`mx-auto w-full ${maxWidth} px-4 pb-28 pt-5 sm:px-6 lg:pb-14`}>
-            {children}
-          </main>
-        </div>
+      <Sidebar active={active} />
+
+      {/* Reserve the rail's width on desktop (lg:pl-24) so content can never slip under the
+          fixed sidebar, then center the content within the remaining space. */}
+      <div className="relative z-10 lg:pl-24">
+        <main className={`mx-auto w-full ${maxWidth} px-4 pb-28 pt-5 sm:px-6 lg:pb-14`}>
+          {children}
+        </main>
       </div>
 
       <BottomNav active={active} />
