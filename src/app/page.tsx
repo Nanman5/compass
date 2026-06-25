@@ -5,9 +5,16 @@ import { redirect } from "next/navigation";
 
 import { CompassWordmark } from "@/components/CompassStar";
 import { Icon, type IconName } from "@/components/Icon";
+import SmoothScroll from "@/components/SmoothScroll";
 import { readSession, SESSION_COOKIE } from "@/lib/auth";
 
-const NAV = ["Features", "How it works", "For families", "Pricing", "Resources"];
+const NAV: { label: string; href: string }[] = [
+  { label: "Features", href: "#features" },
+  { label: "How it works", href: "#how" },
+  { label: "For families", href: "#families" },
+  { label: "Pricing", href: "#pricing" },
+  { label: "Resources", href: "#resources" },
+];
 
 export default async function Home() {
   // Already signed in with a valid (unexpired, untampered) session? Skip the marketing page
@@ -17,6 +24,7 @@ export default async function Home() {
 
   return (
     <div className="flex flex-col min-h-screen overflow-x-hidden bg-cream">
+      <SmoothScroll />
       <SiteNav />
       <main className="flex-1">
         <Hero />
@@ -42,8 +50,13 @@ function SiteNav() {
         <CompassWordmark />
         <ul className="hidden lg:flex items-center gap-7 text-sm font-semibold text-teal/80">
           {NAV.map((item) => (
-            <li key={item} className="hover:text-teal transition-colors cursor-pointer">
-              {item}
+            <li key={item.label}>
+              <a
+                href={item.href}
+                className="rounded-md px-1 py-0.5 text-teal/80 hover:text-teal transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal/40"
+              >
+                {item.label}
+              </a>
             </li>
           ))}
         </ul>
@@ -213,7 +226,7 @@ const STEPS = [
 
 function HowItWorks() {
   return (
-    <section id="how" className="py-16">
+    <section id="how" className="scroll-mt-20 py-16">
       <div className="mx-auto max-w-6xl px-5">
         <h2 className="text-center text-3xl sm:text-4xl font-semibold">How Compass works</h2>
 
@@ -294,7 +307,7 @@ const FEATURES: { icon: IconName; tint: string; ink: string; title: string; body
 
 function OneApp() {
   return (
-    <section id="features" className="py-16 sm:py-20 bg-cream-deep/60 border-y border-teal/10">
+    <section id="features" className="scroll-mt-20 py-16 sm:py-20 bg-cream-deep/60 border-y border-teal/10">
       <div className="mx-auto max-w-6xl px-5">
         <p className="eyebrow text-center">Everything in one companion</p>
         <h2 className="mt-2 text-center text-3xl sm:text-5xl font-semibold">One app for the whole journey</h2>
@@ -383,7 +396,7 @@ function PasteCard() {
    A generated "This week for <child>" card on the left; descriptive copy on the right. */
 function WeeklyDrop() {
   return (
-    <section className="py-16 sm:py-24">
+    <section id="families" className="scroll-mt-20 py-16 sm:py-24">
       <div className="mx-auto max-w-6xl px-5 grid lg:grid-cols-2 gap-12 items-center">
         {/* the weekly-feed card */}
         <Image
@@ -495,7 +508,7 @@ const FAMILY_FEATURES = [
 
 function Pricing() {
   return (
-    <section id="pricing" className="py-16 sm:py-24">
+    <section id="pricing" className="scroll-mt-20 py-16 sm:py-24">
       <div className="mx-auto max-w-4xl px-5">
         <p className="eyebrow text-center">Pricing</p>
         <h2 className="mt-2 text-center text-3xl sm:text-4xl font-semibold">Start free. Stay if it helps.</h2>
@@ -561,7 +574,7 @@ const FOOTER_COLS: { heading: string; links: string[] }[] = [
 
 function SiteFooter() {
   return (
-    <footer className="border-t border-teal/10 bg-cream">
+    <footer id="resources" className="scroll-mt-20 border-t border-teal/10 bg-cream">
       <div className="mx-auto max-w-6xl px-5 py-14">
         <div className="grid gap-10 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <div className="max-w-xs">
