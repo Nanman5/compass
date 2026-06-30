@@ -263,8 +263,11 @@ export default function VoiceOnboarding({
           startAnalyser(e.streams[0]);
         };
 
-        // Send the mic.
-        const mic = await navigator.mediaDevices.getUserMedia({ audio: true });
+        // Send the mic. Echo cancellation is ESSENTIAL on a phone: without it the speaker's
+        // audio leaks into the mic and the agent interrupts itself / transcribes its own voice.
+        const mic = await navigator.mediaDevices.getUserMedia({
+          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+        });
         if (cancelled) {
           mic.getTracks().forEach((t) => t.stop());
           return;

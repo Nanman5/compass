@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Compass — Demo Prep Kit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --cream:#FBF6EC;
+    --paper:#FFFDF8;
+    --ink:#2C3331;
+    --muted:#6B736F;
+    --teal:#2E7D74;
+    --teal-soft:#E5F0EE;
+    --coral:#E5836B;
+    --coral-soft:#FBEAE3;
+    --line:#ECE4D6;
+    --radius:18px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    font-family:"Nunito Sans",system-ui,sans-serif;
+    color:var(--ink);
+    background:var(--cream);
+    line-height:1.6;
+  }
+  .wrap{max-width:880px;margin:0 auto;padding:0 22px 96px;}
+
+  /* hero */
+  header.hero{
+    text-align:center;
+    padding:72px 22px 40px;
+  }
+  .mark{font-size:40px;line-height:1;margin-bottom:8px;}
+  header.hero h1{
+    font-family:"Fraunces",serif;
+    font-weight:600;
+    font-size:clamp(34px,6vw,52px);
+    margin:6px 0 6px;
+    letter-spacing:-.01em;
+  }
+  header.hero .sub{color:var(--muted);font-size:18px;margin:0 auto;max-width:520px;}
+  .tagchips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:22px;}
+  .chip{
+    background:var(--teal-soft);color:var(--teal);
+    font-weight:700;font-size:13px;border-radius:999px;padding:6px 14px;
+  }
+
+  /* sticky nav */
+  nav.toc{
+    position:sticky;top:0;z-index:10;
+    background:rgba(251,246,236,.82);
+    backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line);
+    margin-bottom:36px;
+  }
+  nav.toc .wrap{display:flex;flex-wrap:wrap;gap:6px 18px;padding:12px 22px;max-width:880px;}
+  nav.toc a{color:var(--muted);text-decoration:none;font-weight:600;font-size:14px;}
+  nav.toc a:hover{color:var(--teal);}
+
+  section{margin:0 0 40px;}
+  h2{
+    font-family:"Fraunces",serif;font-weight:600;
+    font-size:26px;margin:0 0 4px;display:flex;align-items:baseline;gap:10px;
+  }
+  h2 .num{
+    font-size:14px;font-weight:700;color:var(--teal);
+    background:var(--teal-soft);border-radius:8px;padding:2px 9px;
+    font-family:"Nunito Sans",sans-serif;
+  }
+  .lead{color:var(--muted);margin:0 0 18px;}
+
+  .card{
+    background:var(--paper);border:1px solid var(--line);
+    border-radius:var(--radius);padding:22px 24px;margin:14px 0;
+  }
+
+  /* pitch */
+  .pitch{
+    background:var(--teal);color:#fff;border:none;
+    font-family:"Fraunces",serif;font-size:21px;line-height:1.5;font-weight:400;
+  }
+  .pitch em{font-style:italic;opacity:.92;}
+  .closer{
+    background:var(--coral-soft);border:1px solid #F2D8CE;color:#9A4A35;
+    border-radius:14px;padding:14px 18px;margin-top:12px;font-size:16px;
+  }
+  .say{color:var(--teal);font-weight:700;}
+  blockquote{
+    margin:0;padding:2px 0 2px 16px;border-left:3px solid var(--teal);
+    color:var(--ink);font-style:italic;
+  }
+  blockquote.q{border-left-color:var(--coral);}
+
+  /* tables */
+  table{width:100%;border-collapse:collapse;font-size:15px;}
+  th,td{text-align:left;padding:11px 12px;vertical-align:top;border-bottom:1px solid var(--line);}
+  th{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.05em;font-weight:700;}
+  td:first-child{font-weight:700;white-space:nowrap;}
+  tr:last-child td{border-bottom:none;}
+  code{
+    background:var(--teal-soft);color:var(--teal);
+    padding:1px 6px;border-radius:6px;font-size:.88em;
+    font-family:ui-monospace,"SF Mono",Menlo,monospace;
+  }
+
+  /* flow steps */
+  ol.flow{list-style:none;counter-reset:step;padding:0;margin:0;}
+  ol.flow > li{
+    counter-increment:step;position:relative;
+    padding:0 0 22px 52px;margin:0;
+  }
+  ol.flow > li::before{
+    content:counter(step);
+    position:absolute;left:0;top:0;
+    width:34px;height:34px;border-radius:50%;
+    background:var(--teal);color:#fff;font-weight:700;
+    display:flex;align-items:center;justify-content:center;font-size:15px;
+  }
+  ol.flow > li::after{
+    content:"";position:absolute;left:16px;top:34px;bottom:0;
+    width:2px;background:var(--line);
+  }
+  ol.flow > li:last-child::after{display:none;}
+  ol.flow b{font-family:"Fraunces",serif;font-weight:600;}
+  .heart{color:var(--coral);font-weight:700;}
+
+  .note{
+    background:#FFF8E8;border:1px solid #F0E2BE;border-radius:14px;
+    padding:14px 18px;margin-top:16px;font-size:15px;
+  }
+
+  /* Q&A */
+  .qa{margin:12px 0;}
+  .qa .q{font-weight:700;color:var(--ink);margin:0 0 4px;}
+  .qa .a{color:var(--muted);margin:0;font-style:italic;padding-left:14px;border-left:3px solid var(--coral);}
+
+  ul.tips{padding-left:0;list-style:none;margin:0;}
+  ul.tips li{padding:8px 0 8px 28px;position:relative;border-bottom:1px solid var(--line);}
+  ul.tips li:last-child{border-bottom:none;}
+  ul.tips li::before{content:"✦";position:absolute;left:4px;color:var(--coral);}
+
+  footer{text-align:center;color:var(--muted);font-size:14px;padding-top:20px;border-top:1px solid var(--line);}
+
+  @media (max-width:560px){
+    td:first-child{white-space:normal;}
+    .pitch{font-size:18px;}
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="mark">🧭</div>
+  <h1>Compass — Demo Prep Kit</h1>
+  <p class="sub">Everything to present the demo with confidence, in English. Speak the lines in teal.</p>
+  <div class="tagchips">
+    <span class="chip">Evidence, not authority</span>
+    <span class="chip">Technology with intention</span>
+    <span class="chip">Privacy by design</span>
+  </div>
+</header>
+
+<nav class="toc">
+  <div class="wrap">
+    <a href="#pitch">Pitch</a>
+    <a href="#stack">Stack</a>
+    <a href="#inside">How it works</a>
+    <a href="#vocab">Vocabulary</a>
+    <a href="#flow">Demo flow</a>
+    <a href="#qa">Q&amp;A</a>
+    <a href="#tips">Tips</a>
+  </div>
+</nav>
+
+<main class="wrap">
+
+  <!-- 1. PITCH -->
+  <section id="pitch">
+    <h2><span class="num">1</span> The pitch — 30 seconds</h2>
+    <p class="lead">Memorize this. Lead with the problem, not the stack.</p>
+    <div class="card pitch">
+      “<b>Compass is a parenting companion for the digital age.</b> It helps parents of kids aged 2 to 8
+      with one problem: instead of <em>doom-scrolling</em> for advice, you get <b>one small, concrete thing
+      to try right now</b> — personalized to your child and checked against real research. And it
+      <b>remembers your family</b>, so the advice gets sharper the more you use it.”
+      <div class="closer">
+        Closer: <em>“Every piece of advice comes with a ‘when to put the screen away’ note — that’s our
+        principle: <b>technology with intention.</b>”</em>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. STACK -->
+  <section id="stack">
+    <h2><span class="num">2</span> The stack</h2>
+    <p class="lead">What to say and why.</p>
+    <div class="card">
+      <table>
+        <thead><tr><th>Layer</th><th>Tech</th><th>How you say it</th></tr></thead>
+        <tbody>
+          <tr><td>Framework</td><td>Next.js 16 · React 19 · TypeScript</td><td>“Full-stack React framework, server and client in one.”</td></tr>
+          <tr><td>Styling</td><td>Tailwind CSS v4</td><td>“Utility-first CSS — custom cream/teal palette, Fraunces + Nunito Sans.”</td></tr>
+          <tr><td>AI / LLM</td><td>Google Gemini + OpenAI</td><td>“Provider-agnostic — I can swap models, with automatic fallback.”</td></tr>
+          <tr><td>Voice</td><td>OpenAI Realtime API · WebRTC</td><td>“Live voice conversation, low latency.”</td></tr>
+          <tr><td>Database</td><td>Google Cloud Firestore</td><td>“Multi-tenant NoSQL store, scoped per family.”</td></tr>
+          <tr><td>Research</td><td>Europe PMC REST API</td><td>“Live search of peer-reviewed medical literature.”</td></tr>
+          <tr><td>Auth</td><td>OAuth 2.0 (Google) + signed cookie</td><td>“No third-party auth library — I built the OAuth flow myself.”</td></tr>
+          <tr><td>Hosting</td><td>Google Cloud Run + Cloud Build</td><td>“Deployed from source, containerized, auto-scaling.”</td></tr>
+          <tr><td>Testing</td><td>Vitest (29 tests)</td><td>“Unit-tested core logic.”</td></tr>
+        </tbody>
+      </table>
+      <div class="note">
+        <b>One-liner if you blank out:</b> <span class="say">“Next.js 16 and React 19 on the front,
+        two LLM providers behind one interface, Firestore for memory, deployed on Google Cloud Run.”</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. HOW IT WORKS -->
+  <section id="inside">
+    <h2><span class="num">3</span> How it works inside</h2>
+    <p class="lead">The three ideas that make it more than a ChatGPT wrapper. Master these and you own the Q&amp;A.</p>
+
+    <div class="card">
+      <h3 style="font-family:'Fraunces',serif;margin:0 0 6px;">a) Memory — “the soul of the product”</h3>
+      <p>Each family has a persistent memory: the child profile + <em>learnings</em> (facts) +
+      <em>episodes</em> (situation → suggestion → outcome). The coach <b>reads</b> it before every answer
+      and <b>writes back</b> after. It’s hard-scoped by <code>familyId</code> — one family can never reach
+      another’s data.</p>
+      <blockquote>“It’s a typed, per-family memory. The coach reads it before every answer and writes back after — so guidance personalizes over time.”</blockquote>
+    </div>
+
+    <div class="card">
+      <h3 style="font-family:'Fraunces',serif;margin:0 0 6px;">b) The agentic Coach — a tool-loop, not a single call</h3>
+      <p>Not one LLM call — a bounded tool-loop (up to 6 steps). Real tools:
+      <code>get_family_profile</code>, <code>retrieve_evidence</code>, <code>find_studies</code>,
+      <code>record_learning</code> / <code>log_interaction</code>. Every step is recorded into a
+      <b>trajectory</b> shown in a “Behind the scenes” panel — visible proof it’s agentic and grounded.</p>
+      <blockquote>“The coach runs a tool-loop: it reads the family profile, retrieves evidence, searches studies, then commits a single next step. Every step is recorded so you can see the reasoning.”</blockquote>
+    </div>
+
+    <div class="card">
+      <h3 style="font-family:'Fraunces',serif;margin:0 0 6px;">c) Evidence, not authority</h3>
+      <p>Advice is checked against curated clinical studies + a live, quality-filtered search of Europe PMC
+      (peer-reviewed only). Pasted/found content is treated as <b>evidence to weigh, never as orders</b>,
+      and citations are validated against sources actually retrieved.</p>
+      <blockquote>“The model can’t fabricate a citation — references are validated against sources actually retrieved.”</blockquote>
+    </div>
+  </section>
+
+  <!-- 4. VOCABULARY -->
+  <section id="vocab">
+    <h2><span class="num">4</span> Key vocabulary</h2>
+    <p class="lead">Pronounce these with ease — they’ll ask.</p>
+    <div class="card">
+      <table>
+        <tbody>
+          <tr><td>Agentic <span style="color:var(--muted);font-weight:400">(a-JEN-tik)</span></td><td>“The AI decides which tools to call and loops until it has an answer — it acts, not just responds.”</td></tr>
+          <tr><td>Tool-loop</td><td>“The model calls real functions, gets results, calls again — bounded to 6 steps and a cost ceiling.”</td></tr>
+          <tr><td>RAG</td><td>“Retrieval-Augmented Generation — it retrieves real evidence and grounds the answer in it.”</td></tr>
+          <tr><td>Grounded</td><td>“The advice is backed by retrieved sources, not the model’s opinion.”</td></tr>
+          <tr><td>Multi-tenant</td><td>“Many families share one database, but each is isolated — scoped by familyId.”</td></tr>
+          <tr><td>Provider-agnostic</td><td>“One interface wraps both Gemini and OpenAI — I can swap or fall back.”</td></tr>
+          <tr><td>Ephemeral token</td><td>“For voice, the API key never reaches the browser — the server mints a short-lived secret.”</td></tr>
+          <tr><td>COPPA-minded</td><td>“Children’s privacy law — I store only a first name and an age band, never a birth date or photo.”</td></tr>
+          <tr><td>Data minimization</td><td>“I collect the least data possible to do the job.”</td></tr>
+          <tr><td>OAuth 2.0</td><td>“Standard ‘Sign in with Google’ — I built the Authorization Code flow without a library.”</td></tr>
+          <tr><td>Semantic vs. episodic</td><td>“Semantic = durable facts (the profile). Episodic = events (situation → suggestion → outcome).”</td></tr>
+          <tr><td>Peer-reviewed</td><td>“Research checked by other scientists before publishing — the only studies I trust.”</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 5. DEMO FLOW -->
+  <section id="flow">
+    <h2><span class="num">5</span> The demo flow</h2>
+    <p class="lead">Tell a story: problem → magic → trust. Follow this order.</p>
+    <div class="card">
+      <p style="margin-top:0;color:var(--muted)"><b>Before you start:</b> open the app on <code>localhost:3000</code> or the live link.
+      Mention: <span class="say">“guests can use the whole app — no sign-up wall.”</span></p>
+      <ol class="flow">
+        <li><b>Landing page</b><br><span class="say">“This is the problem: parents drowning in conflicting advice online.”</span></li>
+        <li><b>Onboarding (chat or voice)</b><br><span class="say">“It gets to know my child through a warm conversation — name, age band, temperament, what we’re working on. No forms.”</span> If you dare, use <b>voice</b> here — it’s the wow.</li>
+        <li><b>Coach — “Your one next step”</b> <span class="heart">(the heart — spend time here)</span><br>Type something real: <i>“bedtime is a battle.”</i> → One concrete step appears.<br>Open the <b>“Behind the scenes”</b> panel → <span class="say">“Here’s the proof it’s agentic: it read my profile, retrieved evidence, found studies, then committed one step — with the screen-away note.”</span></li>
+        <li><b>Paste &amp; personalize</b><br>Paste a reel link or a screenshot. → <span class="say">“It reads text, links, even images via vision, checks them against evidence, and turns them into one step that fits my child — or tells me honestly when it’s not real parenting advice.”</span></li>
+        <li><b>Help me now (voice)</b><br><span class="say">“An in-the-moment voice coach. It calms the parent first, then gives one tiny thing to try.”</span></li>
+        <li><b>What Compass remembers</b><br><span class="say">“Full transparency. Everything stored, in plain language. One tap to add context or erase it all.”</span></li>
+        <li><b>Close</b><br><span class="say">“Three principles: evidence, not authority · technology with intention · privacy by design.”</span></li>
+      </ol>
+      <div class="note">⚠️ <b>Plan B:</b> if the internet fails or voice won’t connect, have <b>screenshots</b> of every step ready. Voice depends on the network — don’t make it your only demo.</div>
+    </div>
+  </section>
+
+  <!-- 6. Q&A -->
+  <section id="qa">
+    <h2><span class="num">6</span> Questions they’ll ask</h2>
+    <div class="card">
+      <div class="qa"><p class="q">“Isn’t this just a ChatGPT wrapper?”</p><p class="a">“No. Three things: an agentic tool-loop with real functions, grounded in peer-reviewed evidence with validated citations, and persistent per-family memory that personalizes over time.”</p></div>
+      <hr style="border:none;border-top:1px solid var(--line);margin:16px 0;">
+      <div class="qa"><p class="q">“How do you protect children’s privacy?”</p><p class="a">“COPPA-minded: first name only, age band not birth date, never a photo or location. It supports the parent — it never monitors the child. Data is hard-scoped by familyId, and any family can erase everything in one tap.”</p></div>
+      <hr style="border:none;border-top:1px solid var(--line);margin:16px 0;">
+      <div class="qa"><p class="q">“What if the AI gives wrong advice?”</p><p class="a">“It weighs evidence instead of asserting authority, refuses content that isn’t real parenting advice, and can’t fabricate citations — they’re validated against retrieved sources.”</p></div>
+      <hr style="border:none;border-top:1px solid var(--line);margin:16px 0;">
+      <div class="qa"><p class="q">“Why two LLM providers?”</p><p class="a">“Resilience and flexibility. One interface, a health-check, and automatic fallback if one provider fails.”</p></div>
+      <hr style="border:none;border-top:1px solid var(--line);margin:16px 0;">
+      <div class="qa"><p class="q">“Where’s the data stored?”</p><p class="a">“Google Cloud Firestore in production, using Application Default Credentials — no API keys in the code. A local JSON store for dev.”</p></div>
+      <hr style="border:none;border-top:1px solid var(--line);margin:16px 0;">
+      <div class="qa"><p class="q">“How does the live voice work?”</p><p class="a">“OpenAI’s Realtime API over WebRTC. The server mints an ephemeral token so the API key never reaches the browser.”</p></div>
+    </div>
+  </section>
+
+  <!-- 7. TIPS -->
+  <section id="tips">
+    <h2><span class="num">7</span> Final tips</h2>
+    <div class="card">
+      <ul class="tips">
+        <li>Practice the hard words out loud once: <i>agentic, ephemeral, multi-tenant, peer-reviewed, COPPA, Firestore, Europe PMC.</i></li>
+        <li>Lead with the problem, not the stack. People remember <i>“one small thing to try right now,”</i> not <i>“Next.js 16.”</i></li>
+        <li>If you blank out, return to the three principles: evidence not authority · technology with intention · privacy by design.</li>
+        <li>Keep the live link and screenshots as backup.</li>
+        <li>Strongest closing line: <span class="say">“It’s not about more screen time or less — it’s about technology with intention.”</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>🧭 Compass · You’ve got this. Good luck tomorrow.</footer>
+
+</main>
+</body>
+</html>

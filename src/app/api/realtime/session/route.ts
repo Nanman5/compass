@@ -16,13 +16,38 @@ import "server-only";
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 
+import { GROUNDING_TOOLS } from "@/lib/grounding";
 import { buildHelpNowInstructions, HELPNOW_TOOLS } from "@/lib/helpnow";
 import { memory } from "@/lib/memory";
+import { buildStoryInstructions, STORY_TOOLS, STORY_VOICE } from "@/lib/story";
+import { UI_TOOLS } from "@/lib/uitools";
 import { REALTIME_MODEL, REALTIME_VOICE, VOICE_INSTRUCTIONS, VOICE_TOOLS } from "@/lib/voice";
 
 import type { RealtimeFunctionTool } from "openai/resources/realtime/realtime";
 
 export const runtime = "nodejs";
+
+/**
+ * Input-audio config shared by both personas. Tuned to stop the agent interrupting ITSELF
+ * on a phone: the speaker's audio bleeds into the mic, and the default VAD reads that echo
+ * as the parent talking → it barges in on its own reply and transcribes the echo (the
+ * "hallucination"). Mitigations, layered with the client's echo-cancellation constraints:
+ *   • noise_reduction `near_field` — for a phone held close (cuts background + echo bleed).
+ *   • server_vad threshold 0.6 (above default 0.5) — needs louder, clearer speech to fire,
+ *     so attenuated echo no longer trips it; longer silence avoids jumping on short pauses.
+ * interrupt_response stays true so a REAL interruption from the parent still works.
+ */
+const INPUT_AUDIO = {
+  noise_reduction: { type: "near_field" as const },
+  turn_detection: {
+    type: "server_vad" as const,
+    threshold: 0.6,
+    prefix_padding_ms: 300,
+    silence_duration_ms: 600,
+    create_response: true,
+    interrupt_response: true,
+  },
+};
 
 /**
  * Body (all optional): { mode?: "onboarding" | "helpnow", familyId?: string }.
@@ -38,11 +63,12 @@ export async function POST(req: Request): Promise<Response> {
     );
   }
 
-  let mode: "onboarding" | "helpnow" = "onboarding";
+  let mode: "onboarding" | "helpnow" | "story" = "onboarding";
   let familyId = "";
   try {
     const body = (await req.json()) as { mode?: string; familyId?: string };
     if (body?.mode === "helpnow") mode = "helpnow";
+    else if (body?.mode === "story") mode = "story";
     if (typeof body?.familyId === "string") familyId = body.familyId.trim();
   } catch {
     /* no body → onboarding defaults */
@@ -50,10 +76,17 @@ export async function POST(req: Request): Promise<Response> {
 
   let instructions = VOICE_INSTRUCTIONS;
   let tools: RealtimeFunctionTool[] = VOICE_TOOLS;
+  let voice = REALTIME_VOICE;
   if (mode === "helpnow") {
     const profile = familyId ? await memory.getProfile(familyId).catch(() => null) : null;
     instructions = buildHelpNowInstructions(profile);
-    tools = HELPNOW_TOOLS;
+    // The crisis coach can drive the screen (timer/scene) and check the live web (grounding).
+    tools = [...HELPNOW_TOOLS, ...UI_TOOLS, ...GROUNDING_TOOLS];
+  } else if (mode === "story") {
+    const profile = familyId ? await memory.getProfile(familyId).catch(() => null) : null;
+    instructions = buildStoryInstructions(profile);
+    tools = STORY_TOOLS;
+    voice = STORY_VOICE; // a more theatrical voice for the storyteller
   }
 
   try {
@@ -63,13 +96,13 @@ export async function POST(req: Request): Promise<Response> {
         type: "realtime",
         model: REALTIME_MODEL,
         instructions,
-        audio: { output: { voice: REALTIME_VOICE } },
+        audio: { input: INPUT_AUDIO, output: { voice } },
         tools,
         tool_choice: "auto",
       },
     });
 
-    console.info(`[voice] minted realtime token (mode=${mode}, model=${REALTIME_MODEL}, voice=${REALTIME_VOICE})`);
+    console.info(`[voice] minted realtime token (mode=${mode}, model=${REALTIME_MODEL}, voice=${voice})`);
     return NextResponse.json({
       value: secret.value,
       expiresAt: secret.expires_at,

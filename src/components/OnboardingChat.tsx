@@ -86,6 +86,7 @@ export default function OnboardingChat({ familyId: familyIdProp }: { familyId?: 
   const [pending, setPending] = useState(true); // true during the opening kickoff
   const [done, setDone] = useState(false);
   const [returning, setReturning] = useState(false);
+  const [confirmed, setConfirmed] = useState(false); // parent tapped "continue" past the recap
   const [profile, setProfile] = useState<ChildProfile | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [input, setInput] = useState("");
@@ -135,13 +136,12 @@ export default function OnboardingChat({ familyId: familyIdProp }: { familyId?: 
     }
   }, [pushMessage]);
 
-  // Lock the page to a definite full-height, no-scroll shell while the CHAT is showing.
-  // This makes `h-full` resolve in Safari (a `min-h-full` body is an INDEFINITE height, so
-  // percentage/auto heights collapse there) and keeps the document from scrolling — the
-  // message pane scrolls itself. Once onboarding is done we hand off to the dashboard, which
-  // is a normal scrolling page, so we unlock then (and on unmount).
+  // Lock the page to a definite full-height, no-scroll shell while the CHAT (incl. the
+  // completion recap) is showing. This makes `h-full` resolve in Safari (a `min-h-full` body
+  // is an INDEFINITE height, so percentage/auto heights collapse there) and keeps the document
+  // from scrolling — the message pane scrolls itself. We unlock on unmount, which is exactly
+  // when the parent taps "continue" and we hand off to the dashboard (a normal scrolling page).
   useEffect(() => {
-    if (done) return;
     const html = document.documentElement;
     const body = document.body;
     const prev = { htmlH: html.style.height, bodyH: body.style.height, bodyO: body.style.overflow };
@@ -153,7 +153,7 @@ export default function OnboardingChat({ familyId: familyIdProp }: { familyId?: 
       body.style.height = prev.bodyH;
       body.style.overflow = prev.bodyO;
     };
-  }, [done]);
+  }, []);
 
   // Kick off the conversation exactly once (guard against React StrictMode double-invoke,
   // which otherwise fires two kickoffs → two greeting bubbles).
@@ -206,7 +206,7 @@ export default function OnboardingChat({ familyId: familyIdProp }: { familyId?: 
     if (!el) return;
     const id = requestAnimationFrame(() =>
       requestAnimationFrame(() =>
-        el.scrollTo({ top: done ? 0 : el.scrollHeight, behavior: "smooth" }),
+        el.scrollTo({ top: el.scrollHeight, behavior: "smooth" }),
       ),
     );
     return () => cancelAnimationFrame(id);
@@ -260,7 +260,10 @@ export default function OnboardingChat({ familyId: familyIdProp }: { familyId?: 
   }, [turn, applyResponse]);
 
   // Onboarding complete → hand off to the full Home dashboard (a normal scrolling page).
-  if (done && profile) {
+  // A FRESH completion first shows Compass's closing message + a recap of what it learned, and
+  // only hands off once the parent taps continue (so it never cuts away mid-goodbye). A
+  // RETURNING family (already known) skips straight in.
+  if (done && profile && (returning || confirmed)) {
     return (
       <HomeDashboard
         profile={profile}
@@ -324,7 +327,7 @@ export default function OnboardingChat({ familyId: familyIdProp }: { familyId?: 
           )}
         </main>
 
-        {!done && (
+        {!done ? (
           <div className="mx-auto w-full max-w-2xl shrink-0 px-4 sm:px-6">
             <Composer
               value={input}
@@ -335,7 +338,11 @@ export default function OnboardingChat({ familyId: familyIdProp }: { familyId?: 
               onVoice={() => setVoiceOpen(true)}
             />
           </div>
-        )}
+        ) : profile ? (
+          <div className="mx-auto w-full max-w-2xl shrink-0 px-4 pb-5 pt-2 sm:px-6">
+            <CompletionCard profile={profile} onContinue={() => setConfirmed(true)} />
+          </div>
+        ) : null}
       </div>
 
       {voiceOpen && (
@@ -348,6 +355,56 @@ export default function OnboardingChat({ familyId: familyIdProp }: { familyId?: 
           }}
         />
       )}
+    </div>
+  );
+}
+
+/* ───────────────────────────────────────── completion recap (the closing beat) */
+
+/** Shown after Compass's closing message: a warm recap of what it learned, with a single
+ *  "continue" tap that hands off to the dashboard — so onboarding never cuts away abruptly. */
+function CompletionCard({
+  profile,
+  onContinue,
+}: {
+  profile: ChildProfile;
+  onContinue: () => void;
+}) {
+  const name = profile.childName || "your little one";
+  const facts = [
+    profile.ageBand && `Age ${profile.ageBand}`,
+    profile.struggles[0] && `Working on ${profile.struggles[0]}`,
+    profile.temperament[0],
+    profile.interests[0] && `Loves ${profile.interests[0]}`,
+  ].filter(Boolean) as string[];
+
+  return (
+    <div className="msg-in glass rounded-[1.6rem] p-5 sm:p-6">
+      <p className="text-[0.72rem] font-bold uppercase tracking-[0.14em] text-coral">All set</p>
+      <h3
+        className="mt-1 text-[1.15rem] font-semibold text-teal"
+        style={{ fontFamily: "var(--font-display)" }}
+      >
+        Here&apos;s what I&apos;ll remember about {name}
+      </h3>
+      {facts.length > 0 && (
+        <ul className="mt-3 flex flex-wrap gap-2">
+          {facts.map((f) => (
+            <li
+              key={f}
+              className="rounded-full border border-teal/15 bg-cream-card/70 px-3 py-1.5 text-[0.82rem] font-semibold text-teal"
+            >
+              {f}
+            </li>
+          ))}
+        </ul>
+      )}
+      <button onClick={onContinue} className="btn btn-primary mt-5 w-full">
+        Take me to {name}&apos;s space
+      </button>
+      <p className="mt-3 text-center text-xs leading-relaxed text-muted">
+        You can change or erase any of this anytime in Memory.
+      </p>
     </div>
   );
 }

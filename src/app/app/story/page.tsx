@@ -1,18 +1,18 @@
 "use client";
 
 /**
- * /app/help — the "Help Me Now" crisis voice coach.
+ * /app/story — "Story Together": a shared, spoken story between parent and Compass.
  *
- * Resolves the family identity (signed-in Google account → g:<sub>, else the guest familyId
- * saved during onboarding) so the coach can personalize to this child, then mounts the
- * full-screen voice experience.
+ * Resolves the family identity (server-resolved shared familyId for signed-in accounts, else
+ * the guest familyId from onboarding) so the storyteller can make the child the hero, then
+ * mounts the full-screen voice experience.
  */
 
 import { useEffect, useState } from "react";
 
-import HelpMeNow from "@/components/HelpMeNow";
+import Storytime from "@/components/Storytime";
 
-export default function HelpPage() {
+export default function StoryPage() {
   const [familyId, setFamilyId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -49,11 +49,11 @@ export default function HelpPage() {
           <div className="blob blob-gold" />
         </div>
         <p className="relative z-10 text-sm font-semibold uppercase tracking-[0.16em] text-coral">
-          I&apos;m right here…
+          Once upon a time…
         </p>
       </div>
     );
   }
 
-  return <HelpMeNow familyId={familyId} />;
+  return <Storytime familyId={familyId} />;
 }

@@ -94,6 +94,55 @@ export interface MemoryStore {
   deleteFamily(familyId: string): Promise<void>;
 }
 
+/* ─────────────────────────────── Family directory (co-parenting / shared access)
+
+   A family is a shared space, NOT one account. Identity (a Google `sub`) is decoupled
+   from the tenant (`familyId`) by a membership layer, so two parents can point at the
+   SAME family memory. Invites are the consent gate: an existing member mints a code,
+   the co-parent redeems it, and a membership is created. This directory lives ALONGSIDE
+   the per-family memory store (it never holds child data — only which adults can reach it). */
+
+export type FamilyRole = "owner" | "member";
+
+/** Links one adult (Google `sub`) to one family. The join that enables co-parenting. */
+export interface Membership {
+  userSub: string;
+  familyId: string;
+  role: FamilyRole;
+  /** Adult display name/email (NOT the child's) — lets the UI show "who has access". */
+  name?: string;
+  email?: string;
+  createdAt: string; // ISO
+}
+
+/** A short-lived, shareable code that grants membership to `familyId` when redeemed. */
+export interface Invite {
+  code: string; // human-typeable, e.g. "K7QMRT94" → normalized uppercase alphanumerics
+  familyId: string;
+  createdBySub: string;
+  createdAt: string; // ISO
+  expiresAt: string; // ISO
+  redeemedBySub?: string;
+  redeemedAt?: string;
+}
+
+/**
+ * Directory of WHO can reach each family. Separate from MemoryStore (which holds the
+ * child data) so the tenant boundary stays clean: this maps adults↔families and nothing
+ * else. Local-first (JSON) in dev, Firestore in prod — same interface, like MemoryStore.
+ */
+export interface FamilyDirectory {
+  /** The family this adult belongs to (null until they create/join one). */
+  getMembershipByUser(userSub: string): Promise<Membership | null>;
+  /** Everyone with access to a family — powers the "shared with" list. */
+  listMembers(familyId: string): Promise<Membership[]>;
+  /** Upsert a membership (re-joining moves the adult to a new family). */
+  putMembership(membership: Membership): Promise<void>;
+  createInvite(invite: Invite): Promise<void>;
+  getInvite(code: string): Promise<Invite | null>;
+  markInviteRedeemed(code: string, userSub: string, redeemedAt: string): Promise<void>;
+}
+
 /* ─────────────────────────────── Evidence corpus (RAG, global, read-only) */
 
 export interface EvidenceSnippet {
@@ -203,4 +252,54 @@ export interface CoachTurnResult {
   trajectory: TrajectoryStep[];
   /** Tokens/latency/model for the trace footer. */
   meta: { provider: string; model: string; steps: number; ms: number };
+}
+
+/* ─────────────────────────────── Weekly Drop (persisted, synthesized briefing)
+
+   A Drop is NOT "one article handed over". It's a synthesis: we pull SEVERAL real studies
+   around THIS family's current situation (their struggles + recent episodes/learnings),
+   weave them into one relevant briefing for the parent, attach the real sources (so nothing
+   is fabricated), and generate an infographic. Every drop is saved per family + ISO week so
+   the family can revisit past drops. Shared by the API (server) and the UI (client). */
+
+export type DropItemKind = "study" | "tip" | "activity";
+
+export interface DropItem {
+  kind: DropItemKind;
+  title: string;
+  body: string;
+  /** STUDY item only: the primary real source label + a link to read it. */
+  source?: string;
+  url?: string;
+}
+
+/** One real study woven into the synthesis (shown in the drop's "Sources" list). */
+export interface DropSource {
+  title: string;
+  source: string; // e.g. "Journal of Pediatric Psychology · 2025" or curated authors
+  url?: string; // DOI / Europe PMC; curated studies may have none
+}
+
+export interface WeeklyDrop {
+  familyId: string;
+  weekKey: string; // stable "this week" key, e.g. "2026-W26"
+  childName: string;
+  /** The synthesized through-line for this family right now (the headline to present). */
+  headline: string;
+  /** 1–2 sentence synthesis across the sources, tied to the family's situation. */
+  summary: string;
+  items: DropItem[]; // study (synthesized insight) + tip + activity
+  sources: DropSource[]; // ALL the real studies pulled & woven in
+  /** Generated infographic as a data URL. Kept on the live/in-memory drop; the durable
+   *  Firestore copy omits it (1 MB doc limit) — the local dev store keeps it. */
+  heroImage?: string;
+  createdAt: string; // ISO
+}
+
+/** Per-family archive of weekly drops. Local JSON in dev, Firestore in prod (same interface). */
+export interface DropStore {
+  saveDrop(drop: WeeklyDrop): Promise<void>;
+  getDrop(familyId: string, weekKey: string): Promise<WeeklyDrop | null>;
+  /** Most-recent first, capped by `limit` — powers the "past drops" archive. */
+  listDrops(familyId: string, limit?: number): Promise<WeeklyDrop[]>;
 }

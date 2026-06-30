@@ -41,8 +41,8 @@ async function resolveFamilyId(): Promise<string> {
   try {
     const res = await fetch("/api/auth/me");
     if (res.ok) {
-      const data = (await res.json()) as { user?: { sub?: string } | null };
-      if (data.user?.sub) return `g:${data.user.sub}`;
+      const data = (await res.json()) as { familyId?: string };
+      if (data.familyId) return data.familyId;
     }
   } catch {
     /* fall through to the local demo id */

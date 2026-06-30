@@ -28,13 +28,6 @@ const TOOLS: Tool[] = [
     Icon: HeartIcon,
   },
   {
-    href: "/app/coach",
-    title: "Your one next step",
-    blurb:
-      "Describe a struggle — Compass returns one concrete action, plus when to put the screen away.",
-    Icon: StepIcon,
-  },
-  {
     href: "/app/paste",
     title: "Paste & personalize",
     blurb:
@@ -134,21 +127,6 @@ function HeartIcon() {
         strokeWidth="1.7"
         strokeLinejoin="round"
       />
-    </svg>
-  );
-}
-
-function StepIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M4 19h4v-4h4V9h4V5h4"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <circle cx="19" cy="5" r="1.5" fill="currentColor" />
     </svg>
   );
 }

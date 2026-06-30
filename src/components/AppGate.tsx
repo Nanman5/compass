@@ -3,10 +3,14 @@
 /**
  * AppGate — wraps /app with Google sign-in.
  *
- * On load it asks /api/auth/me. Signed in → the onboarding runs with a per-user familyId
- * ("g:<sub>") so memory is tied to the Google account; a small chip offers sign-out.
- * Not signed in → a warm sign-in screen with "Continue with Google" (and a guest option
- * so the demo still works without auth). The guest choice is remembered in localStorage.
+ * On load it asks /api/auth/me, which resolves the account's SHARED familyId (via
+ * membership). Signed in → onboarding runs with that familyId, so co-parents who joined
+ * the same family land on the same child's memory. Not signed in → a warm sign-in screen
+ * (with a guest option so the demo works without auth).
+ *
+ * Co-parent join: an invite link is /app?join=CODE. We stash the code (so it survives the
+ * Google round-trip), and once signed in we redeem it before rendering — the second parent
+ * is dropped straight into the shared family.
  */
 
 import Image from "next/image";
@@ -24,13 +28,15 @@ interface AuthUser {
 type Status = "loading" | "signin" | "signedin" | "guest";
 
 const GUEST_KEY = "compass.guest";
+const PENDING_JOIN_KEY = "compass.pendingJoin";
 const MARK = "/brand/compass-mark-color.png";
 
 export default function AppGate() {
   const [status, setStatus] = useState<Status>("loading");
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [familyId, setFamilyId] = useState<string | null>(null);
   const [configured, setConfigured] = useState(true);
   const [authNote, setAuthNote] = useState<string | null>(null);
+  const [joinNote, setJoinNote] = useState<string | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -38,13 +44,46 @@ export default function AppGate() {
     if (auth === "unconfigured") setAuthNote("Google sign-in isn't wired up yet.");
     else if (auth === "failed" || auth === "denied") setAuthNote("That didn't go through — let's try again.");
 
+    // Invite deep-link: stash the code so it survives the Google sign-in redirect, then
+    // strip it from the URL so a refresh doesn't re-trigger.
+    const joinCode = params.get("join");
+    if (joinCode) {
+      localStorage.setItem(PENDING_JOIN_KEY, joinCode);
+      params.delete("join");
+      const qs = params.toString();
+      window.history.replaceState({}, "", window.location.pathname + (qs ? `?${qs}` : ""));
+    }
+
     (async () => {
       try {
         const res = await fetch("/api/auth/me");
         const data = await res.json();
         setConfigured(Boolean(data.configured));
         if (data.user) {
-          setUser(data.user);
+          // Redeem a pending invite before we render, so a joining co-parent lands on the
+          // shared family rather than a fresh empty one.
+          const pending = localStorage.getItem(PENDING_JOIN_KEY);
+          let resolvedFamily: string | null = data.familyId ?? null;
+          if (pending) {
+            localStorage.removeItem(PENDING_JOIN_KEY);
+            try {
+              const jr = await fetch("/api/family/join", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ code: pending }),
+              });
+              const jd = await jr.json();
+              if (jr.ok && jd.familyId) {
+                resolvedFamily = jd.familyId;
+                setJoinNote(jd.alreadyMember ? null : "You're in — this is your shared family now.");
+              } else if (jd?.error) {
+                setJoinNote(jd.error);
+              }
+            } catch {
+              setJoinNote("Couldn't join right now — you can enter the code from Memory.");
+            }
+          }
+          setFamilyId(resolvedFamily);
           setStatus("signedin");
           return;
         }
@@ -68,7 +107,31 @@ export default function AppGate() {
 
   // Account control (sign out / sign in) now lives inside the app shell chrome
   // (mobile header + desktop rail), so there's no floating overlay to collide with content.
-  return <OnboardingChat familyId={user ? `g:${user.sub}` : undefined} />;
+  return (
+    <>
+      {joinNote && <JoinToast text={joinNote} onClose={() => setJoinNote(null)} />}
+      <OnboardingChat familyId={familyId ?? undefined} />
+    </>
+  );
+}
+
+/* ───────────────────────────────────────── co-parent join toast */
+
+function JoinToast({ text, onClose }: { text: string; onClose: () => void }) {
+  useEffect(() => {
+    const t = setTimeout(onClose, 6000);
+    return () => clearTimeout(t);
+  }, [onClose]);
+  return (
+    <div className="fixed inset-x-0 top-4 z-50 flex justify-center px-4">
+      <div className="glass flex items-center gap-3 rounded-full px-5 py-2.5 text-sm font-semibold text-teal shadow-[var(--shadow-soft)]">
+        <span>{text}</span>
+        <button onClick={onClose} aria-label="Dismiss" className="text-teal/50 hover:text-teal">
+          ✕
+        </button>
+      </div>
+    </div>
+  );
 }
 
 /* ───────────────────────────────────────── splash */
@@ -93,6 +156,16 @@ function SignIn({
   note: string | null;
   onGuest: () => void;
 }) {
+  const [showCode, setShowCode] = useState(false);
+  const [code, setCode] = useState("");
+
+  // Joining a co-parent: stash the code so it's redeemed right after Google sign-in.
+  const joinWithGoogle = () => {
+    const trimmed = code.trim();
+    if (trimmed) localStorage.setItem(PENDING_JOIN_KEY, trimmed);
+    window.location.href = "/api/auth/google";
+  };
+
   return (
     <div className="fixed inset-0 grid place-items-center overflow-hidden bg-cream px-5">
       <Aurora />
@@ -122,6 +195,40 @@ function SignIn({
         >
           Continue as guest
         </button>
+
+        {/* Co-parent path: someone shared an invite code with you. */}
+        <div className="mt-5 border-t border-teal/10 pt-4">
+          {showCode ? (
+            <div className="text-left">
+              <label htmlFor="invite" className="text-xs font-semibold text-teal/80">
+                Your co-parent&apos;s invite code
+              </label>
+              <input
+                id="invite"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder="e.g. K7QMRT94"
+                autoCapitalize="characters"
+                className="mt-1.5 w-full rounded-xl border border-teal/20 bg-cream-card/70 px-4 py-2.5 text-sm font-semibold uppercase tracking-wide text-teal placeholder:normal-case placeholder:tracking-normal placeholder:text-muted/60 focus:border-teal focus:outline-none"
+              />
+              <button
+                onClick={joinWithGoogle}
+                disabled={!configured || code.trim().length === 0}
+                className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-full bg-coral px-5 py-2.5 text-sm font-bold text-cream shadow-[var(--shadow-card)] transition hover:bg-coral-deep disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <GoogleG />
+                Sign in &amp; join
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowCode(true)}
+              className="text-sm font-semibold text-coral hover:text-coral-deep"
+            >
+              Have an invite code?
+            </button>
+          )}
+        </div>
 
         <p className="mt-6 text-xs leading-relaxed text-muted">
           We only use your name and email to save your family&apos;s profile. Nothing is shared.

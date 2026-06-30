@@ -19,6 +19,8 @@
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import AppShell from "@/components/AppShell";
+
 /** The real Compass mark — full color for the header presence. */
 const MARK_COLOR = "/brand/compass-mark-color.png";
 /** Mirrors OnboardingChat's localStorage key so Paste shares the family's memory. */
@@ -71,7 +73,7 @@ async function resolveFamilyId(): Promise<string> {
   try {
     const res = await fetch("/api/auth/me");
     const data = await res.json();
-    if (data?.user?.sub) return `g:${data.user.sub}`;
+    if (data?.familyId) return data.familyId as string;
   } catch {
     /* fall through to the local demo id */
   }
@@ -184,38 +186,28 @@ export default function PastePersonalize() {
   const reading = phase === "reading";
 
   return (
-    <div className="relative min-h-dvh w-full overflow-hidden bg-cream">
-      {/* living ambient backdrop */}
-      <div className="aurora" aria-hidden="true">
-        <div className="blob blob-coral" />
-        <div className="blob blob-teal" />
-        <div className="blob blob-gold" />
-        <div className="blob blob-rose" />
-      </div>
+    <AppShell active="paste">
+      <Presence reading={reading} />
 
-      <div className="relative z-10 mx-auto flex min-h-dvh w-full max-w-2xl flex-col px-4 py-10 sm:px-6 sm:py-14">
-        <Presence reading={reading} />
-
-        {/* The paste box stays mounted while reading (so the textarea keeps the text),
-            but is replaced by the result once we have one. */}
-        {phase === "done" && result ? (
-          <div ref={resultRef}>
-            <ResultCard result={result} onReset={reset} />
-          </div>
-        ) : (
-          <PasteBox
-            value={content}
-            onChange={setContent}
-            onKeyDown={onKeyDown}
-            onSubmit={() => void submit()}
-            reading={reading}
-            error={phase === "error" ? error : null}
-            file={file}
-            onAttach={attach}
-          />
-        )}
-      </div>
-    </div>
+      {/* The paste box stays mounted while reading (so the textarea keeps the text),
+          but is replaced by the result once we have one. */}
+      {phase === "done" && result ? (
+        <div ref={resultRef}>
+          <ResultCard result={result} onReset={reset} />
+        </div>
+      ) : (
+        <PasteBox
+          value={content}
+          onChange={setContent}
+          onKeyDown={onKeyDown}
+          onSubmit={() => void submit()}
+          reading={reading}
+          error={phase === "error" ? error : null}
+          file={file}
+          onAttach={attach}
+        />
+      )}
+    </AppShell>
   );
 }
 

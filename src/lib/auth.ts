@@ -16,6 +16,8 @@ import "server-only";
 
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 
+import { cookies } from "next/headers";
+
 export const SESSION_COOKIE = "compass_session";
 export const STATE_COOKIE = "compass_oauth_state";
 const SESSION_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
@@ -134,6 +136,12 @@ export function readSession(token: string | undefined): SessionUser | null {
   } catch {
     return null;
   }
+}
+
+/** The signed-in user for the current request (or null). Reads the session cookie. */
+export async function getSessionUser(): Promise<SessionUser | null> {
+  const jar = await cookies();
+  return readSession(jar.get(SESSION_COOKIE)?.value);
 }
 
 export const sessionCookieOptions = {

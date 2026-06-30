@@ -47,7 +47,14 @@ type LoadState =
 
 /* ───────────────────────────────────────── shell */
 
-export default function MemoryPanel({ familyId }: { familyId: string | null }) {
+export default function MemoryPanel({
+  familyId,
+  topSlot,
+}: {
+  familyId: string | null;
+  /** Optional content rendered inside the column, above the memory sections (e.g. co-parent access). */
+  topSlot?: React.ReactNode;
+}) {
   const [state, setState] = useState<LoadState>({ kind: "loading" });
   const [confirming, setConfirming] = useState(false);
   const [forgetting, setForgetting] = useState(false);
@@ -90,7 +97,7 @@ export default function MemoryPanel({ familyId }: { familyId: string | null }) {
   const empty = ready ? isEmpty(ready) : false;
 
   return (
-    <div className="relative min-h-full w-full overflow-x-hidden bg-cream">
+    <div className="relative min-h-dvh w-full overflow-x-hidden bg-cream">
       {/* living ambient backdrop */}
       <div className="aurora" aria-hidden="true">
         <div className="blob blob-coral" />
@@ -101,6 +108,8 @@ export default function MemoryPanel({ familyId }: { familyId: string | null }) {
 
       <div className="relative z-10 mx-auto w-full max-w-3xl px-4 pb-20 pt-10 sm:px-6 sm:pt-14">
         <PanelHeader />
+
+        {topSlot}
 
         {(state.kind === "loading" || familyId === null) && <SkeletonState />}
 

@@ -29,7 +29,7 @@ async function resolveFamilyId(): Promise<string> {
   try {
     const res = await fetch("/api/auth/me");
     const data = await res.json();
-    if (data?.user?.sub) return `g:${data.user.sub}`;
+    if (data?.familyId) return data.familyId as string;
   } catch {
     /* fall through to the local demo id */
   }

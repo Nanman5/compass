@@ -15,8 +15,11 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-// Tool name kept as a literal so this client file never imports the server helpnow module.
+// Tool names kept as literals so this client file never imports the server modules.
 const TOOL_LOG_MOMENT = "log_help_moment";
+const TOOL_START_TIMER = "start_timer"; // UI-control tool (#11): a calm visible countdown
+const TOOL_SHOW_SCENE = "show_scene";
+const TOOL_LOOK_IT_UP = "look_it_up"; // live-web grounding via Gemini + Google Search
 const MARK_COLOR = "/brand/compass-mark-color.png";
 
 const hlog = (...a: unknown[]) => console.info("[helpnow]", ...a);
@@ -31,6 +34,13 @@ interface FunctionCallItem {
   arguments?: string;
 }
 
+/** A calm countdown the agent can drop on screen (breathing / wind-down). */
+interface CalmTimer {
+  label: string;
+  total: number;
+  remaining: number;
+}
+
 export default function HelpMeNow({ familyId }: { familyId: string }) {
   const router = useRouter();
   const [status, setStatus] = useState<Status>("connecting");
@@ -38,6 +48,8 @@ export default function HelpMeNow({ familyId }: { familyId: string }) {
   const [logged, setLogged] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [muted, setMuted] = useState(false);
+  const [timer, setTimer] = useState<CalmTimer | null>(null);
+  const [scene, setScene] = useState<{ emoji: string; caption: string } | null>(null);
 
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const dcRef = useRef<RTCDataChannel | null>(null);
@@ -68,6 +80,24 @@ export default function HelpMeNow({ familyId }: { familyId: string }) {
     cleanup();
     router.push("/app");
   }, [cleanup, router]);
+
+  /** Some parents don't want to talk out loud in a hard moment — let them switch to the
+   *  text coach instead. We tear down the voice session first, then hand off. */
+  const switchToChat = useCallback(() => {
+    cleanup();
+    router.push("/app/coach");
+  }, [cleanup, router]);
+
+  // Count an agent-started timer down; clear it shortly after it reaches zero.
+  useEffect(() => {
+    if (!timer) return;
+    if (timer.remaining <= 0) {
+      const t = setTimeout(() => setTimer(null), 1200);
+      return () => clearTimeout(t);
+    }
+    const t = setTimeout(() => setTimer((c) => (c ? { ...c, remaining: c.remaining - 1 } : c)), 1000);
+    return () => clearTimeout(t);
+  }, [timer]);
 
   /** Drive the calm ring animation from the model's audio amplitude. */
   const startAnalyser = useCallback((stream: MediaStream) => {
@@ -120,6 +150,28 @@ export default function HelpMeNow({ familyId }: { familyId: string }) {
           });
           result = await res.json();
           if (res.ok) setLogged(true);
+        } else if (item.name === TOOL_START_TIMER) {
+          // UI-control tool (#11): a calm visible countdown — breathing / wind-down.
+          const total = Math.max(3, Math.min(120, Number(args.seconds) || 20));
+          const label = typeof args.label === "string" ? args.label : "Three slow breaths";
+          setTimer({ label, total, remaining: total });
+          result = { ok: true };
+        } else if (item.name === TOOL_SHOW_SCENE) {
+          // UI-control tool (#11): paint a calming scene the parent can look at.
+          setScene({
+            emoji: typeof args.emoji === "string" ? args.emoji : "✨",
+            caption: typeof args.caption === "string" ? args.caption : "",
+          });
+          result = { ok: true };
+        } else if (item.name === TOOL_LOOK_IT_UP) {
+          // live-web grounding (Gemini + Google Search) so the agent can check real info.
+          const q = typeof args.query === "string" ? args.query : "";
+          const r = await fetch("/api/search", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ query: q }),
+          });
+          result = r.ok ? await r.json() : { error: "couldn't look that up" };
         } else {
           result = { error: `unknown tool: ${item.name}` };
         }
@@ -191,7 +243,11 @@ export default function HelpMeNow({ familyId }: { familyId: string }) {
           startAnalyser(e.streams[0]);
         };
 
-        const mic = await navigator.mediaDevices.getUserMedia({ audio: true });
+        // Echo cancellation is ESSENTIAL on a phone speaker: otherwise the agent hears its
+        // own voice and interrupts itself / transcribes the echo as if the parent spoke.
+        const mic = await navigator.mediaDevices.getUserMedia({
+          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+        });
         if (cancelled) {
           mic.getTracks().forEach((t) => t.stop());
           return;
@@ -253,6 +309,16 @@ export default function HelpMeNow({ familyId }: { familyId: string }) {
         </p>
 
         <div className="flex flex-col items-center gap-8">
+          {scene && (
+            <div key={scene.emoji + scene.caption} className="msg-in flex flex-col items-center gap-1.5">
+              <span className="text-6xl" aria-hidden="true">{scene.emoji}</span>
+              {scene.caption && (
+                <span className="text-base font-semibold text-teal" style={{ fontFamily: "var(--font-display)" }}>
+                  {scene.caption}
+                </span>
+              )}
+            </div>
+          )}
           <div ref={pulseRef} className="voice-pulse relative grid h-64 w-64 place-items-center">
             <span className="voice-ring" style={{ width: "100%", height: "100%", animationDelay: "0s" }} />
             <span className="voice-ring" style={{ width: "76%", height: "76%", animationDelay: "0.8s" }} />
@@ -293,10 +359,48 @@ export default function HelpMeNow({ familyId }: { familyId: string }) {
               {muted ? <MicOffIcon /> : <MicIcon />}
             </button>
           )}
+          {/* Don't want to talk out loud? Switch to typing it through with the coach. */}
+          <button
+            onClick={switchToChat}
+            aria-label="Switch to text chat instead"
+            title="Rather type? Switch to chat"
+            className="glass grid h-14 w-14 place-items-center rounded-full text-teal transition hover:scale-105 active:scale-95"
+          >
+            <ChatIcon />
+          </button>
           <button onClick={leave} className="btn btn-primary px-7" aria-label="End and go back">
             {status === "error" ? "Back" : "I'm okay now"}
           </button>
         </div>
+      </div>
+
+      {timer && <CalmTimerOverlay timer={timer} />}
+    </div>
+  );
+}
+
+/** Full-screen calm countdown the agent drops in (start_timer) — breathing / wind-down. */
+function CalmTimerOverlay({ timer }: { timer: CalmTimer }) {
+  const pct = Math.max(0, timer.remaining / timer.total);
+  const R = 52;
+  const C = 2 * Math.PI * R;
+  return (
+    <div className="absolute inset-0 z-30 grid place-items-center bg-cream/70 backdrop-blur-sm">
+      <div className="glass flex flex-col items-center gap-4 rounded-[2rem] px-10 py-8 text-center">
+        <div className="relative grid h-32 w-32 place-items-center">
+          <svg width="128" height="128" viewBox="0 0 128 128" className="-rotate-90">
+            <circle cx="64" cy="64" r={R} fill="none" stroke="rgba(30,77,74,0.12)" strokeWidth="8" />
+            <circle
+              cx="64" cy="64" r={R} fill="none" stroke="var(--color-coral)" strokeWidth="8" strokeLinecap="round"
+              strokeDasharray={C} strokeDashoffset={C * (1 - pct)}
+              style={{ transition: "stroke-dashoffset 1s linear" }}
+            />
+          </svg>
+          <span className="absolute text-3xl font-semibold text-teal">{Math.max(0, timer.remaining)}</span>
+        </div>
+        <p className="text-lg font-semibold text-teal" style={{ fontFamily: "var(--font-display)" }}>
+          {timer.label}
+        </p>
       </div>
     </div>
   );
@@ -316,6 +420,19 @@ function MicOffIcon() {
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path d="M9 9v2a3 3 0 0 0 4.5 2.6M15 11V6a3 3 0 0 0-5.8-1.1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
       <path d="M5 11a7 7 0 0 0 10.5 6.1M12 18v3M4 4l16 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ChatIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v7a2.5 2.5 0 0 1-2.5 2.5H10l-4 3.5v-3.5A2.5 2.5 0 0 1 4 13.5v-7z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }

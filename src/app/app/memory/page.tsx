@@ -16,6 +16,7 @@
 
 import { useEffect, useState } from "react";
 
+import FamilyAccess from "@/components/FamilyAccess";
 import MemoryPanel from "@/components/MemoryPanel";
 
 const FAMILY_ID_KEY = "compass.familyId";
@@ -31,9 +32,10 @@ function getGuestFamilyId(): string {
 
 export default function MemoryPage() {
   const [familyId, setFamilyId] = useState<string | null>(null);
+  const [signedIn, setSignedIn] = useState(false);
 
-  // Resolve the family scope once on mount: a signed-in user maps to `g:<sub>`
-  // (so this matches AppGate), otherwise we fall back to the local demo id.
+  // Resolve the family scope once on mount: a signed-in user gets the server-resolved
+  // SHARED familyId (so co-parents line up); guests fall back to the local demo id.
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -41,7 +43,10 @@ export default function MemoryPage() {
       try {
         const res = await fetch("/api/auth/me");
         const data = await res.json();
-        if (data?.user?.sub) id = `g:${data.user.sub}`;
+        if (data?.familyId) {
+          id = data.familyId;
+          if (!cancelled) setSignedIn(Boolean(data.user));
+        }
       } catch {
         /* fall through to the local demo id */
       }
@@ -53,5 +58,5 @@ export default function MemoryPage() {
     };
   }, []);
 
-  return <MemoryPanel familyId={familyId} />;
+  return <MemoryPanel familyId={familyId} topSlot={signedIn ? <FamilyAccess /> : null} />;
 }

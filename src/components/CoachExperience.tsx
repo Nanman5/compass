@@ -38,7 +38,7 @@ async function resolveFamilyId(): Promise<string> {
   try {
     const res = await fetch("/api/auth/me");
     const data = await res.json();
-    if (data?.user?.sub) return `g:${data.user.sub}`;
+    if (data?.familyId) return data.familyId as string;
   } catch {
     /* fall through to the local demo id */
   }
@@ -163,6 +163,17 @@ export default function CoachExperience() {
         <div className="blob blob-gold" />
         <div className="blob blob-rose" />
       </div>
+
+      {/* back to the app (this surface locks scroll, so it isn't wrapped in the shell) */}
+      <a
+        href="/app"
+        className="glass absolute left-4 top-4 z-20 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold text-teal/80 transition hover:text-teal sm:left-6 sm:top-6"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        Back
+      </a>
 
       <div className="relative z-10 flex h-full w-full flex-col">
         {/* presence header */}

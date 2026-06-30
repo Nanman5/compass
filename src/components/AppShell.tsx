@@ -14,16 +14,28 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
 
-export type TabKey = "home" | "today" | "drop" | "checkin" | "toolkit";
+export type TabKey =
+  | "home"
+  | "today"
+  | "drop"
+  | "checkin"
+  | "toolkit"
+  | "help"
+  | "paste"
+  | "memory"
+  | "story";
 
 const MARK = "/brand/compass-mark-color.png";
 
+// The Toolkit's tools now live directly in the rail (no separate Toolkit tab).
 const TABS: { key: TabKey; label: string; href: string }[] = [
   { key: "home", label: "Home", href: "/app" },
-  { key: "today", label: "Today", href: "/app/today" },
+  { key: "story", label: "Story", href: "/app/story" },
   { key: "drop", label: "Drop", href: "/app/weekly" },
   { key: "checkin", label: "Check-in", href: "/app/wins" },
-  { key: "toolkit", label: "Toolkit", href: "/app/toolkit" },
+  { key: "help", label: "Help now", href: "/app/help" },
+  { key: "paste", label: "Personalize", href: "/app/paste" },
+  { key: "memory", label: "Memory", href: "/app/memory" },
 ];
 
 function TabIcon({ kind }: { kind: TabKey }) {
@@ -48,6 +60,26 @@ function TabIcon({ kind }: { kind: TabKey }) {
     case "toolkit":
       return (
         <svg {...c}><rect x="3.5" y="7" width="17" height="12" rx="2.5" stroke="currentColor" strokeWidth="1.7" /><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7M3.5 12.5h17" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" /></svg>
+      );
+    case "help":
+      // life-ring — quick support in a hard moment
+      return (
+        <svg {...c}><circle cx="12" cy="12" r="8.5" stroke="currentColor" strokeWidth="1.7" /><circle cx="12" cy="12" r="3.2" stroke="currentColor" strokeWidth="1.7" /><path d="M14.3 9.7l3-3M6.7 17.3l3-3M14.3 14.3l3 3M6.7 6.7l3 3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" /></svg>
+      );
+    case "paste":
+      // sparkle — turn pasted advice into one step
+      return (
+        <svg {...c}><path d="M12 4l1.7 4.6L18 10l-4.3 1.4L12 16l-1.7-4.6L6 10l4.3-1.4L12 4z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" /><path d="M18 15l.6 1.6 1.6.6-1.6.6L18 20l-.6-1.6-1.6-.6 1.6-.6L18 15z" fill="currentColor" /></svg>
+      );
+    case "memory":
+      // bookmark — what Compass remembers
+      return (
+        <svg {...c}><path d="M7 4h10v16l-5-3.2L7 20V4z" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>
+      );
+    case "story":
+      // open book with a sparkle — tell a story together
+      return (
+        <svg {...c}><path d="M12 6.5C10.5 5 8 4.5 4 4.7V18c4-.2 6.5.3 8 1.8 1.5-1.5 4-2 8-1.8V4.7c-4-.2-6.5.3-8 1.8z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" /><path d="M12 6.5v13" stroke="currentColor" strokeWidth="1.6" /><path d="M18.5 3.5l.5 1.3 1.3.5-1.3.5-.5 1.3-.5-1.3-1.3-.5 1.3-.5.5-1.3z" fill="currentColor" /></svg>
       );
   }
 }
