@@ -35,7 +35,7 @@ import type {
 
 /* ─────────────────────────────── config & helpers */
 
-const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
+const DEFAULT_GEMINI_MODEL = "gemini-3.5-flash";
 const DEFAULT_OPENAI_MODEL = "gpt-4o-mini";
 
 /** Per-request wall-clock budget. The Coach turn target is ~30s; one model turn must fit well under that. */

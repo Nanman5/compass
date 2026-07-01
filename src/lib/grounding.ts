@@ -11,7 +11,7 @@ import "server-only";
 
 import type { RealtimeFunctionTool } from "openai/resources/realtime/realtime";
 
-const GROUNDING_MODEL = process.env.GROUNDING_GEMINI_MODEL || "gemini-2.5-flash";
+const GROUNDING_MODEL = process.env.GROUNDING_GEMINI_MODEL || "gemini-3.5-flash";
 
 export const GROUNDING_TOOL = { lookItUp: "look_it_up" } as const;
 
