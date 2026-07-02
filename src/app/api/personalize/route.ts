@@ -34,6 +34,7 @@
 import { NextResponse } from "next/server";
 
 import { familyAccessError } from "@/lib/authz";
+import { budgetExceededError, COST } from "@/lib/budget";
 import { evidence } from "@/lib/evidence";
 import { asString, extractJsonObject } from "@/lib/parse";
 import { ingestSource, IngestError } from "@/lib/ingest";
@@ -89,6 +90,9 @@ export async function POST(req: Request): Promise<Response> {
 
   const denied = await familyAccessError(familyId);
   if (denied) return denied;
+
+  const overBudget = await budgetExceededError(familyId, COST.personalize);
+  if (overBudget) return overBudget;
 
   // Turn whatever they gave us — text, a link, a screenshot, or a clip — into advice text.
   let clipped: string;

@@ -16,6 +16,7 @@
 import { NextResponse } from "next/server";
 
 import { familyAccessError } from "@/lib/authz";
+import { budgetExceededError, COST } from "@/lib/budget";
 import { memory } from "@/lib/memory";
 import { onboardingTurn, startOnboarding } from "@/lib/onboarding";
 import type { OnboardingState } from "@/lib/types";
@@ -42,6 +43,9 @@ export async function POST(req: Request): Promise<Response> {
 
   const denied = await familyAccessError(familyId);
   if (denied) return denied;
+
+  const overBudget = await budgetExceededError(familyId, COST.chatTurn);
+  if (overBudget) return overBudget;
 
   // Resume the prior conversation if the client sent one, else seed a fresh one.
   const onboardingState: OnboardingState = isOnboardingState(state)

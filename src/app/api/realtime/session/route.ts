@@ -17,6 +17,7 @@ import { NextResponse } from "next/server";
 import OpenAI from "openai";
 
 import { familyAccessError } from "@/lib/authz";
+import { budgetExceededError, COST } from "@/lib/budget";
 import { GROUNDING_TOOLS } from "@/lib/grounding";
 import { buildHelpNowInstructions, HELPNOW_TOOLS } from "@/lib/helpnow";
 import { memory } from "@/lib/memory";
@@ -140,11 +141,16 @@ export async function POST(req: Request): Promise<Response> {
     /* no body → onboarding defaults */
   }
 
-  // The familyId is only used to personalize instructions with that family's profile —
-  // still gate it, so a stranger can't mint a session pre-loaded with someone else's child.
-  if (familyId) {
-    const denied = await familyAccessError(familyId);
-    if (denied) return denied;
+  // Every voice session is scoped + budgeted per family (live audio is the priciest call).
+  if (!familyId) {
+    return NextResponse.json({ error: "familyId is required" }, { status: 400 });
+  }
+  const denied = await familyAccessError(familyId);
+  if (denied) return denied;
+  // The gemini retry after a failed OpenAI handshake is the SAME session — don't charge twice.
+  if (!forceGemini) {
+    const overBudget = await budgetExceededError(familyId, COST.voiceSession);
+    if (overBudget) return overBudget;
   }
 
   let instructions = VOICE_INSTRUCTIONS;

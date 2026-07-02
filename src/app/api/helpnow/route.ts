@@ -14,6 +14,7 @@
 import { NextResponse } from "next/server";
 
 import { familyAccessError } from "@/lib/authz";
+import { budgetExceededError, COST } from "@/lib/budget";
 import { buildHelpNowChatInstructions } from "@/lib/helpnow";
 import { getLlm } from "@/lib/llm";
 import { memory } from "@/lib/memory";
@@ -48,6 +49,9 @@ export async function POST(req: Request): Promise<Response> {
 
   const denied = await familyAccessError(familyId);
   if (denied) return denied;
+
+  const overBudget = await budgetExceededError(familyId, COST.chatTurn);
+  if (overBudget) return overBudget;
 
   const turns: ChatMessage[] = (Array.isArray(history) ? history : [])
     .filter(

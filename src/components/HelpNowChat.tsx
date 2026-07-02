@@ -71,15 +71,13 @@ export default function HelpNowChat({ familyId }: { familyId: string }) {
         ...prev,
         { id: nextId.current++, role: "compass", text: data.reply || "I'm here. Tell me more." },
       ]);
-    } catch {
-      setTurns((prev) => [
-        ...prev,
-        {
-          id: nextId.current++,
-          role: "compass",
-          text: "I lost the connection for a second — I'm still here. Say that again?",
-        },
-      ]);
+    } catch (err) {
+      // Surface a real server message (e.g. the demo-budget note) over the generic retry line.
+      const text =
+        err instanceof Error && err.message && err.message !== "Couldn't reach Compass"
+          ? err.message
+          : "I lost the connection for a second — I'm still here. Say that again?";
+      setTurns((prev) => [...prev, { id: nextId.current++, role: "compass", text }]);
     } finally {
       setSending(false);
       requestAnimationFrame(() => textareaRef.current?.focus());

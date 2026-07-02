@@ -18,6 +18,7 @@
 import { NextResponse } from "next/server";
 
 import { familyAccessError } from "@/lib/authz";
+import { budgetExceededError, COST } from "@/lib/budget";
 import { runCoachTurn } from "@/lib/coach";
 
 export const runtime = "nodejs";
@@ -45,6 +46,9 @@ export async function POST(req: Request): Promise<Response> {
 
   const denied = await familyAccessError(familyId);
   if (denied) return denied;
+
+  const overBudget = await budgetExceededError(familyId, COST.coachTurn);
+  if (overBudget) return overBudget;
 
   // Narrow the optional conversation context (older turns are dropped server-side too).
   const turns = (Array.isArray(history) ? history : [])

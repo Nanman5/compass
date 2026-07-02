@@ -253,7 +253,11 @@ export default function VoiceOnboarding({
     (async () => {
       try {
         vlog("starting session…");
-        const tokenRes = await fetch("/api/realtime/session", { method: "POST" });
+        const tokenRes = await fetch("/api/realtime/session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ familyId }),
+        });
         const token = await tokenRes.json();
         if (!tokenRes.ok) throw new Error(token.error || "Could not start voice");
         vlog("ephemeral token ok, model:", token.model);
@@ -353,7 +357,7 @@ export default function VoiceOnboarding({
           const fbRes = await fetch("/api/realtime/session", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ provider: "gemini" }),
+            body: JSON.stringify({ familyId, provider: "gemini" }),
           });
           const fb = await fbRes.json();
           if (cancelled) return;

@@ -21,6 +21,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 
 import { familyAccessError } from "@/lib/authz";
+import { budgetExceededError, COST } from "@/lib/budget";
 import { drops } from "@/lib/drops";
 import { generateDropImage } from "@/lib/dropimage";
 import { evidence } from "@/lib/evidence";
@@ -115,6 +116,11 @@ export async function GET(req: NextRequest): Promise<Response> {
       return NextResponse.json(stored);
     }
   }
+
+  // Fresh generation costs real money (synthesis + infographic) — gate it. Cached and
+  // archived drops above stay free forever.
+  const overBudget = await budgetExceededError(familyId, COST.weeklyDrop);
+  if (overBudget) return overBudget;
 
   // ── Generate this week's drop ───────────────────────────────────────────────
   // Pull several real studies for this family's focus (a focused query lands real, linkable

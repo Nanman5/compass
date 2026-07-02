@@ -7,6 +7,8 @@
 
 import { NextResponse } from "next/server";
 
+import { familyAccessError } from "@/lib/authz";
+import { budgetExceededError, COST } from "@/lib/budget";
 import { groundedSearch } from "@/lib/grounding";
 
 export const runtime = "nodejs";
@@ -20,6 +22,17 @@ export async function POST(req: Request): Promise<Response> {
   }
   const query = typeof (body as { query?: unknown })?.query === "string" ? (body as { query: string }).query.trim() : "";
   if (!query) return NextResponse.json({ error: "query is required" }, { status: 400 });
+  const familyId =
+    typeof (body as { familyId?: unknown })?.familyId === "string"
+      ? (body as { familyId: string }).familyId.trim()
+      : "";
+  if (!familyId) return NextResponse.json({ error: "familyId is required" }, { status: 400 });
+
+  const denied = await familyAccessError(familyId);
+  if (denied) return denied;
+
+  const overBudget = await budgetExceededError(familyId, COST.grounding);
+  if (overBudget) return overBudget;
 
   try {
     return NextResponse.json(await groundedSearch(query));

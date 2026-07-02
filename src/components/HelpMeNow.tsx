@@ -167,7 +167,7 @@ export default function HelpMeNow({ familyId, onClose }: { familyId: string; onC
           const r = await fetch("/api/search", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ query: q }),
+            body: JSON.stringify({ query: q, familyId }),
           });
           result = r.ok ? await r.json() : { error: "couldn't look that up" };
         } else {
