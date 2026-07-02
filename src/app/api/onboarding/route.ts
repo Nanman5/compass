@@ -15,6 +15,7 @@
 
 import { NextResponse } from "next/server";
 
+import { familyAccessError } from "@/lib/authz";
 import { memory } from "@/lib/memory";
 import { onboardingTurn, startOnboarding } from "@/lib/onboarding";
 import type { OnboardingState } from "@/lib/types";
@@ -38,6 +39,9 @@ export async function POST(req: Request): Promise<Response> {
   if (typeof familyId !== "string" || familyId.trim().length === 0) {
     return NextResponse.json({ error: "familyId is required" }, { status: 400 });
   }
+
+  const denied = await familyAccessError(familyId);
+  if (denied) return denied;
 
   // Resume the prior conversation if the client sent one, else seed a fresh one.
   const onboardingState: OnboardingState = isOnboardingState(state)

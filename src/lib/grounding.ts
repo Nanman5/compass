@@ -43,10 +43,11 @@ export async function groundedSearch(query: string): Promise<GroundedAnswer> {
   if (!key) throw new Error("Grounding isn't configured (no GEMINI_API_KEY).");
 
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GROUNDING_MODEL}:generateContent?key=${key}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${GROUNDING_MODEL}:generateContent`,
     {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      // The key travels as a header, not a `?key=` query param — URLs land in server/proxy logs.
+      headers: { "Content-Type": "application/json", "x-goog-api-key": key },
       body: JSON.stringify({
         contents: [{ parts: [{ text: query }] }],
         tools: [{ google_search: {} }],

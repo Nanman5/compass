@@ -10,7 +10,8 @@
  *
  * Provider selection (see `getLlm`): pick from env LLM_PROVIDER, else try Gemini,
  * health-check it, and fall back to OpenAI if Gemini fails to authenticate. The
- * resolved client is cached for the process lifetime.
+ * resolved client is cached with a short TTL so a transient failure at first
+ * resolution can't pin the process to the wrong provider.
  *
  * Server-only: reads secrets from process.env; never expose keys to the client.
  */
@@ -206,7 +207,19 @@ function mapMessagesToGemini(messages: ChatMessage[]): Content[] {
     } else if (m.role === "user") {
       contents.push({ role: "user", parts: [{ text: m.content }] });
     } else if (m.role === "assistant") {
-      contents.push({ role: "model", parts: [{ text: m.content }] });
+      // The model turn that requested tools must replay its functionCall parts, so the
+      // following functionResponse parts have something to answer.
+      const parts: Content["parts"] = [];
+      if (m.content) parts.push({ text: m.content });
+      for (const c of m.toolCalls ?? []) {
+        parts.push({
+          functionCall: { name: c.name, args: c.arguments },
+          // Replay the thought signature — Gemini 3.x 400s a functionCall in history without it.
+          ...(c.thoughtSignature ? { thoughtSignature: c.thoughtSignature } : {}),
+        } as Content["parts"][number]);
+      }
+      if (parts.length === 0) parts.push({ text: "" });
+      contents.push({ role: "model", parts });
     } else {
       // role === "tool": a function result. Gemini expects role "user" with a functionResponse part.
       contents.push({
@@ -240,10 +253,13 @@ function parseGeminiResponse(response: unknown): LlmResponse {
   for (const part of parts) {
     const fn = part["functionCall"] as { name?: string; args?: unknown } | undefined;
     if (fn?.name) {
+      const sig = part["thoughtSignature"];
       toolCalls.push({
         id: `gemini-call-${fnIndex++}-${fn.name}`,
         name: fn.name,
         arguments: asArgs(fn.args),
+        // Gemini 3.x requires this signature back on the replayed functionCall part.
+        ...(typeof sig === "string" ? { thoughtSignature: sig } : {}),
       });
     }
     const text = part["text"];
@@ -338,7 +354,18 @@ function mapMessagesToOpenAI(
     } else if (m.role === "system") {
       out.push({ role: "system", content: m.content });
     } else if (m.role === "assistant") {
-      out.push({ role: "assistant", content: m.content });
+      // Include the turn's tool calls — OpenAI 400s a role:"tool" message whose preceding
+      // assistant message doesn't carry the matching tool_calls ids.
+      const toolCalls = (m.toolCalls ?? []).map((c) => ({
+        id: c.id,
+        type: "function" as const,
+        function: { name: c.name, arguments: JSON.stringify(c.arguments) },
+      }));
+      out.push({
+        role: "assistant",
+        content: m.content || null,
+        ...(toolCalls.length > 0 ? { tool_calls: toolCalls } : {}),
+      });
     } else {
       out.push({ role: "user", content: m.content });
     }
@@ -395,7 +422,16 @@ function safeJsonObject(text: string): Record<string, unknown> {
 
 /* ─────────────────────────────── factory + health check */
 
+/**
+ * The resolved client is cached with a TTL rather than for the process lifetime: if Gemini
+ * happened to be down (or mis-picked) at first resolution, we'd otherwise be pinned to the
+ * fallback until a restart. Re-resolving every few minutes self-heals at one health-check
+ * of cost, and concurrent callers share one in-flight resolution.
+ */
+const CACHE_TTL_MS = 5 * 60_000;
 let cached: LlmClient | null = null;
+let cachedAt = 0;
+let resolving: Promise<LlmClient> | null = null;
 
 /** Build the Gemini client from env, or null if no key is configured. */
 function buildGemini(): GeminiClient | null {
@@ -445,8 +481,21 @@ async function healthCheck(client: LlmClient): Promise<boolean> {
  * resolved client is cached for the process.
  */
 export async function getLlm(): Promise<LlmClient> {
-  if (cached) return cached;
+  if (cached && Date.now() - cachedAt < CACHE_TTL_MS) return cached;
+  if (resolving) return resolving;
+  resolving = resolveLlm()
+    .then((client) => {
+      cached = client;
+      cachedAt = Date.now();
+      return client;
+    })
+    .finally(() => {
+      resolving = null;
+    });
+  return resolving;
+}
 
+async function resolveLlm(): Promise<LlmClient> {
   const preference = (process.env.LLM_PROVIDER || "").toLowerCase();
   const gemini = buildGemini();
   const openai = buildOpenAI();
@@ -455,13 +504,11 @@ export async function getLlm(): Promise<LlmClient> {
   if (preference === "openai") {
     if (openai && (await healthCheck(openai))) {
       console.warn("[llm] selected provider: openai (LLM_PROVIDER=openai)");
-      cached = openai;
-      return cached;
+      return openai;
     }
     if (gemini && (await healthCheck(gemini))) {
       console.warn("[llm] LLM_PROVIDER=openai failed health check; fell back to gemini");
-      cached = gemini;
-      return cached;
+      return gemini;
     }
     throw new LlmError("No working LLM provider: openai requested but neither provider authenticated");
   }
@@ -469,8 +516,7 @@ export async function getLlm(): Promise<LlmClient> {
   // Default path (and LLM_PROVIDER=gemini): try Gemini first, fall back to OpenAI.
   if (gemini && (await healthCheck(gemini))) {
     console.warn(`[llm] selected provider: gemini (model=${gemini.model})`);
-    cached = gemini;
-    return cached;
+    return gemini;
   }
 
   if (gemini) {
@@ -481,8 +527,7 @@ export async function getLlm(): Promise<LlmClient> {
 
   if (openai && (await healthCheck(openai))) {
     console.warn(`[llm] selected provider: openai (model=${openai.model})`);
-    cached = openai;
-    return cached;
+    return openai;
   }
 
   throw new LlmError(
@@ -493,4 +538,6 @@ export async function getLlm(): Promise<LlmClient> {
 /** Test seam: drop the cached client (e.g. after changing env in a test). */
 export function resetLlmCache(): void {
   cached = null;
+  cachedAt = 0;
+  resolving = null;
 }

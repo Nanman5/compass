@@ -22,6 +22,7 @@ import path from "node:path";
 
 import type { SessionUser } from "@/lib/auth";
 import { FirestoreFamilyDirectory } from "@/lib/family.firestore";
+import { withLock } from "@/lib/locks";
 import type { FamilyDirectory, Invite, Membership } from "@/lib/types";
 
 /* ─────────────────────────────── invite codes */
@@ -85,16 +86,21 @@ class LocalFamilyDirectory implements FamilyDirectory {
   }
 
   async putMembership(membership: Membership): Promise<void> {
-    const all = await readJson<Membership[]>("memberships.json", []);
-    const next = all.filter((m) => m.userSub !== membership.userSub);
-    next.push(membership);
-    await writeJson("memberships.json", next);
+    // These files are shared across ALL users, so serialize read-modify-writes on them.
+    await withLock("directory:memberships", async () => {
+      const all = await readJson<Membership[]>("memberships.json", []);
+      const next = all.filter((m) => m.userSub !== membership.userSub);
+      next.push(membership);
+      await writeJson("memberships.json", next);
+    });
   }
 
   async createInvite(invite: Invite): Promise<void> {
-    const all = await readJson<Invite[]>("invites.json", []);
-    all.push(invite);
-    await writeJson("invites.json", all);
+    await withLock("directory:invites", async () => {
+      const all = await readJson<Invite[]>("invites.json", []);
+      all.push(invite);
+      await writeJson("invites.json", all);
+    });
   }
 
   async getInvite(code: string): Promise<Invite | null> {
@@ -103,13 +109,15 @@ class LocalFamilyDirectory implements FamilyDirectory {
   }
 
   async markInviteRedeemed(code: string, userSub: string, redeemedAt: string): Promise<void> {
-    const all = await readJson<Invite[]>("invites.json", []);
-    const invite = all.find((i) => i.code === code);
-    if (invite) {
-      invite.redeemedBySub = userSub;
-      invite.redeemedAt = redeemedAt;
-      await writeJson("invites.json", all);
-    }
+    await withLock("directory:invites", async () => {
+      const all = await readJson<Invite[]>("invites.json", []);
+      const invite = all.find((i) => i.code === code);
+      if (invite) {
+        invite.redeemedBySub = userSub;
+        invite.redeemedAt = redeemedAt;
+        await writeJson("invites.json", all);
+      }
+    });
   }
 }
 

@@ -3,8 +3,9 @@
  *
  * Same backend selector as the memory store: local JSON files under `.data/drops/` (one file
  * per family, holding that family's drops newest-first) in dev, Firestore in prod
- * (MEMORY_BACKEND=firestore). Both implement the same `DropStore` interface. The local store
- * keeps the generated infographic too; the Firestore store drops it (1 MB doc limit).
+ * (MEMORY_BACKEND=firestore). Both implement the same `DropStore` interface. Neither persists
+ * the generated infographic (Firestore's 1 MB doc limit; locally it would bloat the JSON
+ * forever) — the current week's image lives in the route's in-memory cache only.
  */
 
 import "server-only";
@@ -13,6 +14,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import { FirestoreDropStore } from "@/lib/drops.firestore";
+import { withLock } from "@/lib/locks";
 import type { DropStore, WeeklyDrop } from "@/lib/types";
 
 function dataDir(): string {
@@ -54,11 +56,17 @@ async function writeDrops(familyId: string, all: WeeklyDrop[]): Promise<void> {
 
 class LocalDropStore implements DropStore {
   async saveDrop(drop: WeeklyDrop): Promise<void> {
-    const all = await readDrops(drop.familyId);
-    const next = all.filter((d) => d.weekKey !== drop.weekKey); // upsert by week
-    next.push(drop);
-    next.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-    await writeDrops(drop.familyId, next);
+    // Match the Firestore store: don't persist the generated infographic (a multi-MB base64
+    // data URL) — the in-memory weekly cache holds it for the week; the archive stays light.
+    const toStore: WeeklyDrop = { ...drop };
+    delete toStore.heroImage;
+    await withLock(`drops:${drop.familyId}`, async () => {
+      const all = await readDrops(drop.familyId);
+      const next = all.filter((d) => d.weekKey !== drop.weekKey); // upsert by week
+      next.push(toStore);
+      next.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      await writeDrops(drop.familyId, next);
+    });
   }
 
   async getDrop(familyId: string, weekKey: string): Promise<WeeklyDrop | null> {

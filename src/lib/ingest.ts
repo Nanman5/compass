@@ -12,7 +12,9 @@
 import "server-only";
 
 import { spawn } from "node:child_process";
+import { lookup } from "node:dns/promises";
 import { mkdtemp, readdir, readFile, rm } from "node:fs/promises";
+import { isIP } from "node:net";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
@@ -74,6 +76,9 @@ export async function ingestSource(input: IngestInput): Promise<Ingested> {
  * login-gated Instagram reel), and finally to a clear "screenshot it" nudge.
  */
 async function ingestLink(url: string): Promise<Ingested> {
+  // Reject private/internal targets up front, so a bad link errors clearly and its URL is
+  // never handed to yt-dlp or the reader proxy either.
+  await assertPublicUrl(url);
   // Instagram reels need Meta Developer Program access we've applied for but don't have yet.
   // Say so plainly instead of failing — TikTok/YouTube links and screenshots work today.
   if (isInstagram(url)) {
@@ -228,15 +233,86 @@ function isHardBlockedSocial(url: string): boolean {
   }
 }
 
+/* ── SSRF guard: this fetch takes an arbitrary user-pasted URL, so it must never be able to
+ *    reach localhost, the cloud metadata service, or anything on the private network. We
+ *    resolve the hostname ourselves and refuse private/reserved addresses, and we follow
+ *    redirects manually so a public page can't bounce us to an internal one. ───────────── */
+
+const MAX_REDIRECTS = 5;
+
+function isPrivateIPv4(ip: string): boolean {
+  const [a, b] = ip.split(".").map(Number);
+  return (
+    a === 0 || a === 10 || a === 127 ||
+    (a === 100 && b >= 64 && b <= 127) || // CGNAT
+    (a === 169 && b === 254) || // link-local / cloud metadata
+    (a === 172 && b >= 16 && b <= 31) ||
+    (a === 192 && b === 168) ||
+    (a === 192 && b === 0) ||
+    (a === 198 && (b === 18 || b === 19)) ||
+    a >= 224 // multicast + reserved
+  );
+}
+
+export function isPrivateAddress(ip: string): boolean {
+  if (isIP(ip) === 4) return isPrivateIPv4(ip);
+  const v6 = ip.toLowerCase();
+  const mapped = v6.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/); // v4-mapped v6
+  if (mapped) return isPrivateIPv4(mapped[1]);
+  return (
+    v6 === "::" || v6 === "::1" ||
+    v6.startsWith("fc") || v6.startsWith("fd") || // unique-local
+    v6.startsWith("fe8") || v6.startsWith("fe9") || v6.startsWith("fea") || v6.startsWith("feb") // link-local
+  );
+}
+
+/** Throws unless the URL is http(s) and its host resolves ONLY to public addresses. */
+export async function assertPublicUrl(raw: string): Promise<URL> {
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    throw new IngestError("That doesn't look like a valid link.");
+  }
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
+    throw new IngestError("Only http(s) links can be read.");
+  }
+  const hostname = url.hostname.replace(/^\[|\]$/g, ""); // strip IPv6 brackets
+  const addresses = isIP(hostname)
+    ? [hostname]
+    : (await lookup(hostname, { all: true }).catch(() => [])).map((a) => a.address);
+  if (addresses.length === 0 || addresses.some(isPrivateAddress)) {
+    throw new IngestError("That link points somewhere Compass can't read — try a public page.");
+  }
+  return url;
+}
+
+/** fetch() with the SSRF guard applied to the URL AND to every redirect hop. */
+async function safeFetch(rawUrl: string, headers: Record<string, string>): Promise<Response | null> {
+  let current = rawUrl;
+  for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+    const url = await assertPublicUrl(current);
+    const res = await fetch(url, {
+      redirect: "manual",
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      headers,
+    });
+    if (res.status >= 300 && res.status < 400) {
+      const location = res.headers.get("location");
+      if (!location) return res;
+      current = new URL(location, url).toString();
+      continue;
+    }
+    return res;
+  }
+  return null; // redirect loop
+}
+
 /** Fetch a page with a given UA and pull readable text from it. Returns null on any failure. */
 async function tryFetchText(url: string, userAgent: string): Promise<string | null> {
   try {
-    const res = await fetch(url, {
-      redirect: "follow",
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-      headers: { "user-agent": userAgent, accept: "text/html,application/xhtml+xml" },
-    });
-    if (!res.ok) return null;
+    const res = await safeFetch(url, { "user-agent": userAgent, accept: "text/html,application/xhtml+xml" });
+    if (!res || !res.ok) return null;
     const ctype = res.headers.get("content-type") || "";
     if (!ctype.includes("html") && !ctype.includes("text")) return null;
     return htmlToText(await res.text()).trim() || null;

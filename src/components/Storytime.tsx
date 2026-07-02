@@ -12,6 +12,8 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { connectGeminiLive, type LiveVoiceSession } from "@/lib/livevoice";
+
 const MARK_COLOR = "/brand/compass-mark-color.png";
 
 const slog = (...a: unknown[]) => console.info("[story]", ...a);
@@ -27,6 +29,7 @@ export default function Storytime({ familyId }: { familyId: string }) {
   const [muted, setMuted] = useState(false);
 
   const pcRef = useRef<RTCPeerConnection | null>(null);
+  const liveRef = useRef<LiveVoiceSession | null>(null);
   const dcRef = useRef<RTCDataChannel | null>(null);
   const micRef = useRef<MediaStream | null>(null);
   const audioElRef = useRef<HTMLAudioElement | null>(null);
@@ -34,6 +37,8 @@ export default function Storytime({ familyId }: { familyId: string }) {
   const cleanup = useCallback(() => {
     micRef.current?.getTracks().forEach((t) => t.stop());
     micRef.current = null;
+    liveRef.current?.close();
+    liveRef.current = null;
     dcRef.current?.close();
     dcRef.current = null;
     pcRef.current?.close();
@@ -77,6 +82,39 @@ export default function Storytime({ familyId }: { familyId: string }) {
         const token = await tokenRes.json();
         if (!tokenRes.ok) throw new Error(token.error || "Could not start the story");
         if (cancelled) return;
+
+        // ── Fallback transport: Gemini Live (no OpenAI available server-side) ──
+        if (token.provider === "gemini") {
+          const mic = await navigator.mediaDevices.getUserMedia({
+            audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+          });
+          if (cancelled) {
+            mic.getTracks().forEach((t) => t.stop());
+            return;
+          }
+          micRef.current = mic;
+          slog("connecting via gemini live fallback:", token.model);
+          liveRef.current = connectGeminiLive({
+            token: token.value,
+            model: token.model,
+            instructions: token.instructions ?? "",
+            tools: token.tools ?? [],
+            mic,
+            onOpen: () => {
+              if (!cancelled) setStatus("live");
+            },
+            onTurnStart: () => setCaption(""),
+            onCaptionDelta: (t) => setCaption((c) => (c + t).slice(-280)),
+            onToolCall: async (name) => ({ error: `unknown tool: ${name}` }),
+            onError: (m) => {
+              if (cancelled) return;
+              serr("gemini live error:", m);
+              setErrorMsg(m);
+              setStatus("error");
+            },
+          });
+          return;
+        }
 
         const pc = new RTCPeerConnection();
         pcRef.current = pc;
@@ -139,6 +177,7 @@ export default function Storytime({ familyId }: { familyId: string }) {
     const next = !muted;
     setMuted(next);
     micRef.current?.getAudioTracks().forEach((t) => (t.enabled = !next));
+    liveRef.current?.setMuted(next); // gemini fallback: also stop sending frames
   }, [muted]);
 
   return (

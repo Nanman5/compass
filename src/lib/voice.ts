@@ -10,6 +10,8 @@
  * imported by the server route; the client only needs the tool NAMES (below) to dispatch.
  */
 
+import { AGE_BANDS } from "@/lib/types";
+
 import type { RealtimeFunctionTool } from "openai/resources/realtime/realtime";
 
 /** The realtime model. Override with REALTIME_MODEL; defaults to the model the user picked. */
@@ -23,7 +25,7 @@ export const VOICE_TOOL = {
   saveProfile: "save_family_profile",
 } as const;
 
-export const VOICE_INSTRUCTIONS = `You are Compass, a warm, calm parenting companion talking out loud with a parent of a child aged 2–8, getting to know their family so you can personalize future guidance.
+export const VOICE_INSTRUCTIONS = `You are Compass, a warm, calm parenting companion talking out loud with a parent of a child aged 0–8, getting to know their family so you can personalize future guidance.
 
 This is a real conversation, not a form. There's NO fixed script — speak naturally, in your own warm words, and let it sound a little different every time.
 
@@ -64,7 +66,7 @@ export const VOICE_TOOLS: RealtimeFunctionTool[] = [
         childName: { type: "string", description: "First name or nickname ONLY." },
         ageBand: {
           type: "string",
-          enum: ["0-1", "2-3", "4-5", "6-8"],
+          enum: [...AGE_BANDS],
           description: "The child's age band.",
         },
         temperament: {

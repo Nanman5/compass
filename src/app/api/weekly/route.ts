@@ -20,11 +20,13 @@
 
 import { type NextRequest, NextResponse } from "next/server";
 
+import { familyAccessError } from "@/lib/authz";
 import { drops } from "@/lib/drops";
 import { generateDropImage } from "@/lib/dropimage";
 import { evidence } from "@/lib/evidence";
 import { getLlm } from "@/lib/llm";
 import { memory } from "@/lib/memory";
+import { extractJsonObject } from "@/lib/parse";
 import { searchResearch } from "@/lib/research";
 import { studies } from "@/lib/studies";
 import type {
@@ -78,6 +80,9 @@ export async function GET(req: NextRequest): Promise<Response> {
   if (typeof familyId !== "string" || familyId.trim().length === 0) {
     return NextResponse.json({ error: "familyId is required" }, { status: 400 });
   }
+
+  const denied = await familyAccessError(familyId);
+  if (denied) return denied;
 
   // Load the whole family memory (profile + episodes + learnings) — the drop is built on it.
   let mem: FamilyMemory = { profile: null, learnings: [], episodes: [] };
@@ -345,9 +350,8 @@ Write this week's synthesized drop. Return JSON exactly in this shape:
 /* ─────────────────────────────── defensive parsing */
 
 function parseSynthesis(text: string): Synthesis | null {
-  const parsed = safeJsonParse(extractJsonObject(text));
-  if (!parsed || typeof parsed !== "object") return null;
-  const o = parsed as Record<string, unknown>;
+  const o = extractJsonObject(text);
+  if (!o) return null;
   const items = parseItems(o.items);
   if (!items) return null;
   return {
@@ -385,21 +389,6 @@ function cleanText(value: unknown, max = 160): string | null {
   const t = value.replace(/\s+/g, " ").trim();
   if (!t) return null;
   return t.length > max ? `${t.slice(0, max - 1)}…` : t;
-}
-
-function safeJsonParse(text: string): unknown {
-  try {
-    return JSON.parse(text);
-  } catch {
-    return undefined;
-  }
-}
-
-/** Pull the first {...} object out of a response that may be fenced or chatty. */
-function extractJsonObject(text: string): string {
-  const start = text.indexOf("{");
-  const end = text.lastIndexOf("}");
-  return start !== -1 && end > start ? text.slice(start, end + 1) : text;
 }
 
 /* ─────────────────────────────── fallback items (never-empty) */

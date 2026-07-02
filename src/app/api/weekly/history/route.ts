@@ -8,6 +8,7 @@
 
 import { type NextRequest, NextResponse } from "next/server";
 
+import { familyAccessError } from "@/lib/authz";
 import { drops } from "@/lib/drops";
 
 export const runtime = "nodejs";
@@ -17,6 +18,9 @@ export async function GET(req: NextRequest): Promise<Response> {
   if (typeof familyId !== "string" || familyId.trim().length === 0) {
     return NextResponse.json({ error: "familyId is required" }, { status: 400 });
   }
+
+  const denied = await familyAccessError(familyId);
+  if (denied) return denied;
 
   const list = await drops.listDrops(familyId, 12).catch(() => []);
   // Strip the (large) generated image from the archive list payload (JSON drops `undefined`).

@@ -14,7 +14,7 @@
 
 import "server-only";
 
-import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
+import { createHmac, createPublicKey, randomUUID, timingSafeEqual, verify as cryptoVerify } from "node:crypto";
 
 import { cookies } from "next/headers";
 
@@ -93,9 +93,10 @@ export async function exchangeCode(code: string): Promise<SessionUser> {
   const data = (await res.json()) as { id_token?: string };
   if (!data.id_token) throw new Error("no id_token in token response");
 
-  // The id_token came directly from Google's token endpoint over TLS, authenticated with
-  // our client secret, so we can trust its claims without re-verifying the signature.
-  const claims = decodeJwtPayload(data.id_token);
+  // The token came directly from Google's endpoint over TLS, but verify it anyway —
+  // signature against Google's published JWKS plus issuer/audience/expiry — so a
+  // misconfigured proxy or DNS surprise can never mint a session from a forged token.
+  const claims = await verifyGoogleIdToken(data.id_token, clientId);
   return {
     sub: String(claims.sub ?? ""),
     email: String(claims.email ?? ""),
@@ -105,10 +106,61 @@ export async function exchangeCode(code: string): Promise<SessionUser> {
   };
 }
 
-function decodeJwtPayload(jwt: string): Record<string, unknown> {
-  const part = jwt.split(".")[1] ?? "";
-  const json = Buffer.from(part, "base64url").toString("utf8");
-  return JSON.parse(json) as Record<string, unknown>;
+/* ─────────────────────────────── Google id_token verification (JWKS) */
+
+const GOOGLE_JWKS_URL = "https://www.googleapis.com/oauth2/v3/certs";
+const GOOGLE_ISSUERS = ["https://accounts.google.com", "accounts.google.com"];
+const JWKS_TTL_MS = 60 * 60_000;
+
+interface Jwk {
+  kid?: string;
+  kty?: string;
+  n?: string;
+  e?: string;
+}
+
+let jwksCache: { keys: Jwk[]; fetchedAt: number } | null = null;
+
+async function getGoogleJwks(): Promise<Jwk[]> {
+  if (jwksCache && Date.now() - jwksCache.fetchedAt < JWKS_TTL_MS) return jwksCache.keys;
+  const res = await fetch(GOOGLE_JWKS_URL, { signal: AbortSignal.timeout(8_000) });
+  if (!res.ok) throw new Error(`JWKS fetch failed (${res.status})`);
+  const data = (await res.json()) as { keys?: Jwk[] };
+  jwksCache = { keys: data.keys ?? [], fetchedAt: Date.now() };
+  return jwksCache.keys;
+}
+
+/** Verify an RS256 Google id_token (signature, issuer, audience, expiry) and return its claims. */
+async function verifyGoogleIdToken(jwt: string, clientId: string): Promise<Record<string, unknown>> {
+  const [headerB64, payloadB64, sigB64] = jwt.split(".");
+  if (!headerB64 || !payloadB64 || !sigB64) throw new Error("malformed id_token");
+
+  const header = JSON.parse(Buffer.from(headerB64, "base64url").toString("utf8")) as {
+    alg?: string;
+    kid?: string;
+  };
+  if (header.alg !== "RS256") throw new Error(`unexpected id_token alg: ${header.alg}`);
+
+  const jwks = await getGoogleJwks();
+  const jwk = jwks.find((k) => k.kid === header.kid && k.kty === "RSA");
+  if (!jwk) throw new Error("no matching Google signing key for id_token");
+
+  const key = createPublicKey({ key: jwk as unknown as Record<string, string>, format: "jwk" });
+  const valid = cryptoVerify(
+    "RSA-SHA256",
+    Buffer.from(`${headerB64}.${payloadB64}`),
+    key,
+    Buffer.from(sigB64, "base64url"),
+  );
+  if (!valid) throw new Error("id_token signature verification failed");
+
+  const claims = JSON.parse(Buffer.from(payloadB64, "base64url").toString("utf8")) as Record<string, unknown>;
+  if (!GOOGLE_ISSUERS.includes(String(claims.iss))) throw new Error("id_token issuer mismatch");
+  if (String(claims.aud) !== clientId) throw new Error("id_token audience mismatch");
+  if (typeof claims.exp === "number" && claims.exp * 1000 < Date.now()) {
+    throw new Error("id_token expired");
+  }
+  return claims;
 }
 
 /* ─────────────────────────────── signed session cookie */

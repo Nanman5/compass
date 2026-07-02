@@ -11,6 +11,7 @@
 
 import { NextResponse } from "next/server";
 
+import { familyAccessError } from "@/lib/authz";
 import { memory } from "@/lib/memory";
 
 export const runtime = "nodejs";
@@ -32,6 +33,9 @@ export async function POST(req: Request): Promise<Response> {
   if (fact.length > 600) {
     return NextResponse.json({ error: "That note is a bit long — keep it short." }, { status: 400 });
   }
+
+  const denied = await familyAccessError(familyId);
+  if (denied) return denied;
 
   try {
     const learning = await memory.addLearning({

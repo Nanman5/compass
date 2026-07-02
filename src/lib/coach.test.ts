@@ -181,4 +181,51 @@ describe("runCoachTurn", () => {
     expect(result.nextStep).toMatch(/calm minute/);
     expect(result.meta.steps).toBe(6);
   });
+
+  it("answers a greeting conversationally: no fabricated step, nothing logged", async () => {
+    const { runCoachTurn } = await import("./coach");
+    const { memory } = await import("./memory");
+
+    script({
+      text: "```json\n" + JSON.stringify({ kind: "chat", reply: "Hey! What's going on with your little one today?" }) + "\n```",
+      toolCalls: [],
+    });
+
+    const steps: string[] = [];
+    const result = await runCoachTurn({
+      familyId: "famA",
+      message: "heyy",
+      onStep: (s) => steps.push(s.kind),
+    });
+
+    expect(result.kind).toBe("chat");
+    expect(result.reply).toMatch(/going on/);
+    expect(result.nextStep).toBe("");
+    expect(result.screenNote).toBe("");
+    expect(result.citations).toEqual([]);
+    // A greeting is NOT an episode — the auto-log safety net must not fire.
+    const mem = await memory.getFamilyMemory("famA");
+    expect(mem.episodes).toHaveLength(0);
+    // The live observer saw the trajectory as it happened.
+    expect(steps).toContain("final");
+  });
+
+  it("replays the assistant's tool calls in the transcript (OpenAI requires the pairing)", async () => {
+    const { runCoachTurn } = await import("./coach");
+
+    script(
+      { text: "", toolCalls: [toolCall("get_family_profile")] },
+      { text: finalText("One small step.", "Screens away at dinner."), toolCalls: [] },
+    );
+
+    await runCoachTurn({ familyId: "famA", message: "bedtime battle" });
+
+    // The 2nd generate() call sees the transcript with the tool result — its preceding
+    // assistant message MUST carry the matching toolCalls or the OpenAI provider 400s.
+    const secondCall = generateMock.mock.calls[1][0];
+    const assistantTurn = secondCall.messages.find((m) => m.role === "assistant");
+    const toolTurn = secondCall.messages.find((m) => m.role === "tool");
+    expect(assistantTurn?.toolCalls?.map((c) => c.id)).toEqual(["call-get_family_profile"]);
+    expect(toolTurn?.toolCallId).toBe("call-get_family_profile");
+  });
 });

@@ -14,7 +14,8 @@
 
 /* ─────────────────────────────── Memory: semantic (the child profile) */
 
-export type AgeBand = "0-1" | "2-3" | "4-5" | "6-8";
+export const AGE_BANDS = ["0-1", "2-3", "4-5", "6-8"] as const;
+export type AgeBand = (typeof AGE_BANDS)[number];
 
 export interface ChildProfile {
   familyId: string;
@@ -169,6 +170,10 @@ export interface ChatMessage {
   /** When role==="tool": which tool call this responds to. */
   toolCallId?: string;
   name?: string;
+  /** When role==="assistant": the tool calls this turn requested. Required in the transcript —
+   *  OpenAI rejects a role:"tool" message whose preceding assistant turn lacks the matching
+   *  tool_calls, and Gemini expects the model's functionCall parts in history. */
+  toolCalls?: ToolCall[];
 }
 
 /** A tool the model may call (JSON-schema parameters), provider-agnostic. */
@@ -182,6 +187,8 @@ export interface ToolCall {
   id: string;
   name: string;
   arguments: Record<string, unknown>;
+  /** Gemini 3.x: opaque signature that MUST be replayed with the functionCall in history. */
+  thoughtSignature?: string;
 }
 
 export interface LlmResponse {
@@ -237,9 +244,16 @@ export interface TrajectoryStep {
 export interface CoachTurnInput {
   familyId: string;
   message: string;
+  /** Live observer — called as each trajectory step happens (powers the streaming UI). */
+  onStep?: (step: TrajectoryStep) => void;
 }
 
 export interface CoachTurnResult {
+  /** "step" = a coached next step; "chat" = a conversational reply (greeting, small talk,
+   *  or a message that isn't a struggle yet — nothing is fabricated, nothing is logged). */
+  kind: "step" | "chat";
+  /** kind==="chat": the short conversational reply. */
+  reply?: string;
   /** The ONE concrete next step, personalized to the child. */
   nextStep: string;
   /** The "when to put the screen away" note — Compass's soul. */

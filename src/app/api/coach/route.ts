@@ -1,19 +1,23 @@
 /**
- * POST /api/coach — run one Coach agent turn.
+ * POST /api/coach — run one Coach agent turn, streamed.
  *
  * The parent describes a situation; the Coach (a bounded tool-loop, see src/lib/coach.ts)
- * loads this family's memory, retrieves evidence, and returns ONE concrete next step plus
- * a "when to put the screen away" note — along with the full agent trajectory for the
- * "Behind the scenes" panel.
+ * loads this family's memory, retrieves evidence, and returns ONE concrete next step (or a
+ * conversational reply for greetings/clarifications) plus the full agent trajectory.
+ *
+ * The response is NDJSON — one JSON object per line, emitted as the agent works, so the UI
+ * can show the agent thinking in real time instead of a mute spinner:
+ *   { "type": "step",   "step": TrajectoryStep }   ← live, one per agent action
+ *   { "type": "result", "result": CoachTurnResult } ← last line
+ *   { "type": "error",  "error": string }           ← last line on failure
  *
  * Body: { familyId: string, message: string }
- * Returns: CoachTurnResult
- *
  * Server-only (reads secrets + reads/writes per-family memory).
  */
 
 import { NextResponse } from "next/server";
 
+import { familyAccessError } from "@/lib/authz";
 import { runCoachTurn } from "@/lib/coach";
 
 export const runtime = "nodejs";
@@ -38,11 +42,35 @@ export async function POST(req: Request): Promise<Response> {
     return NextResponse.json({ error: "message is required" }, { status: 400 });
   }
 
-  try {
-    const result = await runCoachTurn({ familyId, message });
-    return NextResponse.json(result);
-  } catch (err) {
-    console.error("[coach] turn failed:", err);
-    return NextResponse.json({ error: "Coach turn failed" }, { status: 500 });
-  }
+  const denied = await familyAccessError(familyId);
+  if (denied) return denied;
+
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      const send = (obj: unknown) => controller.enqueue(encoder.encode(`${JSON.stringify(obj)}\n`));
+      try {
+        const result = await runCoachTurn({
+          familyId,
+          message,
+          onStep: (step) => send({ type: "step", step }),
+        });
+        send({ type: "result", result });
+      } catch (err) {
+        console.error("[coach] turn failed:", err);
+        send({ type: "error", error: "Coach turn failed" });
+      } finally {
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "content-type": "application/x-ndjson; charset=utf-8",
+      "cache-control": "no-store",
+      // Defeat proxy buffering (nginx/Cloud Run) so steps actually arrive live.
+      "x-accel-buffering": "no",
+    },
+  });
 }

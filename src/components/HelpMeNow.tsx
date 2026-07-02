@@ -15,6 +15,8 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { connectGeminiLive, type LiveVoiceSession } from "@/lib/livevoice";
+
 // Tool names kept as literals so this client file never imports the server modules.
 const TOOL_LOG_MOMENT = "log_help_moment";
 const TOOL_START_TIMER = "start_timer"; // UI-control tool (#11): a calm visible countdown
@@ -52,6 +54,7 @@ export default function HelpMeNow({ familyId }: { familyId: string }) {
   const [scene, setScene] = useState<{ emoji: string; caption: string } | null>(null);
 
   const pcRef = useRef<RTCPeerConnection | null>(null);
+  const liveRef = useRef<LiveVoiceSession | null>(null);
   const dcRef = useRef<RTCDataChannel | null>(null);
   const micRef = useRef<MediaStream | null>(null);
   const audioElRef = useRef<HTMLAudioElement | null>(null);
@@ -66,6 +69,8 @@ export default function HelpMeNow({ familyId }: { familyId: string }) {
     audioCtxRef.current = null;
     micRef.current?.getTracks().forEach((t) => t.stop());
     micRef.current = null;
+    liveRef.current?.close();
+    liveRef.current = null;
     dcRef.current?.close();
     dcRef.current = null;
     pcRef.current?.close();
@@ -123,22 +128,13 @@ export default function HelpMeNow({ familyId }: { familyId: string }) {
     rafRef.current = requestAnimationFrame(tick);
   }, []);
 
-  /** Execute a tool the model asked for, then hand the result back over the data channel. */
-  const executeTool = useCallback(
-    async (item: FunctionCallItem) => {
-      const dc = dcRef.current;
-      if (!dc || !item.name || !item.call_id) return;
-      let args: Record<string, unknown> = {};
-      try {
-        args = item.arguments ? JSON.parse(item.arguments) : {};
-      } catch {
-        /* leave empty */
-      }
-      hlog("tool call →", item.name, args);
-
+  /** Do the actual tool work (shared by the WebRTC and Gemini Live transports). */
+  const runTool = useCallback(
+    async (name: string, args: Record<string, unknown>): Promise<unknown> => {
+      hlog("tool call →", name, args);
       let result: unknown;
       try {
-        if (item.name === TOOL_LOG_MOMENT) {
+        if (name === TOOL_LOG_MOMENT) {
           const res = await fetch("/api/episodes", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -150,20 +146,20 @@ export default function HelpMeNow({ familyId }: { familyId: string }) {
           });
           result = await res.json();
           if (res.ok) setLogged(true);
-        } else if (item.name === TOOL_START_TIMER) {
+        } else if (name === TOOL_START_TIMER) {
           // UI-control tool (#11): a calm visible countdown — breathing / wind-down.
           const total = Math.max(3, Math.min(120, Number(args.seconds) || 20));
           const label = typeof args.label === "string" ? args.label : "Three slow breaths";
           setTimer({ label, total, remaining: total });
           result = { ok: true };
-        } else if (item.name === TOOL_SHOW_SCENE) {
+        } else if (name === TOOL_SHOW_SCENE) {
           // UI-control tool (#11): paint a calming scene the parent can look at.
           setScene({
             emoji: typeof args.emoji === "string" ? args.emoji : "✨",
             caption: typeof args.caption === "string" ? args.caption : "",
           });
           result = { ok: true };
-        } else if (item.name === TOOL_LOOK_IT_UP) {
+        } else if (name === TOOL_LOOK_IT_UP) {
           // live-web grounding (Gemini + Google Search) so the agent can check real info.
           const q = typeof args.query === "string" ? args.query : "";
           const r = await fetch("/api/search", {
@@ -173,13 +169,29 @@ export default function HelpMeNow({ familyId }: { familyId: string }) {
           });
           result = r.ok ? await r.json() : { error: "couldn't look that up" };
         } else {
-          result = { error: `unknown tool: ${item.name}` };
+          result = { error: `unknown tool: ${name}` };
         }
       } catch (err) {
-        herr("tool failed:", item.name, err);
+        herr("tool failed:", name, err);
         result = { error: err instanceof Error ? err.message : "tool failed" };
       }
+      return result;
+    },
+    [familyId],
+  );
 
+  /** Execute a tool the model asked for, then hand the result back over the data channel. */
+  const executeTool = useCallback(
+    async (item: FunctionCallItem) => {
+      const dc = dcRef.current;
+      if (!dc || !item.name || !item.call_id) return;
+      let args: Record<string, unknown> = {};
+      try {
+        args = item.arguments ? JSON.parse(item.arguments) : {};
+      } catch {
+        /* leave empty */
+      }
+      const result = await runTool(item.name, args);
       dc.send(
         JSON.stringify({
           type: "conversation.item.create",
@@ -188,7 +200,7 @@ export default function HelpMeNow({ familyId }: { familyId: string }) {
       );
       dc.send(JSON.stringify({ type: "response.create" }));
     },
-    [familyId],
+    [runTool],
   );
 
   const handleEvent = useCallback(
@@ -231,6 +243,39 @@ export default function HelpMeNow({ familyId }: { familyId: string }) {
         const token = await tokenRes.json();
         if (!tokenRes.ok) throw new Error(token.error || "Could not start voice");
         if (cancelled) return;
+
+        // ── Fallback transport: Gemini Live (no OpenAI available server-side) ──
+        if (token.provider === "gemini") {
+          const mic = await navigator.mediaDevices.getUserMedia({
+            audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+          });
+          if (cancelled) {
+            mic.getTracks().forEach((t) => t.stop());
+            return;
+          }
+          micRef.current = mic;
+          hlog("connecting via gemini live fallback:", token.model);
+          liveRef.current = connectGeminiLive({
+            token: token.value,
+            model: token.model,
+            instructions: token.instructions ?? "",
+            tools: token.tools ?? [],
+            mic,
+            onOpen: () => {
+              if (!cancelled) setStatus("live");
+            },
+            onTurnStart: () => setCaption(""),
+            onCaptionDelta: (t) => setCaption((c) => c + t),
+            onToolCall: runTool,
+            onLevel: (level) => pulseRef.current?.style.setProperty("--level", String(level)),
+            onError: (m) => {
+              if (cancelled) return;
+              herr("gemini live error:", m);
+              setStatus("error");
+            },
+          });
+          return;
+        }
 
         const pc = new RTCPeerConnection();
         pcRef.current = pc;
@@ -286,12 +331,13 @@ export default function HelpMeNow({ familyId }: { familyId: string }) {
       cancelled = true;
       cleanup();
     };
-  }, [cleanup, handleEvent, startAnalyser, familyId]);
+  }, [cleanup, handleEvent, runTool, startAnalyser, familyId]);
 
   const toggleMute = useCallback(() => {
     const next = !muted;
     setMuted(next);
     micRef.current?.getAudioTracks().forEach((t) => (t.enabled = !next));
+    liveRef.current?.setMuted(next); // gemini fallback: also stop sending frames
   }, [muted]);
 
   return (

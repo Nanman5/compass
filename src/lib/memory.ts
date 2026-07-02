@@ -29,6 +29,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir, readFile, writeFile, rm } from "node:fs/promises";
 import path from "node:path";
 
+import { withLock } from "@/lib/locks";
 import { FirestoreMemoryStore } from "@/lib/memory.firestore";
 import type {
   ChildProfile,
@@ -115,41 +116,49 @@ class LocalMemoryStore implements MemoryStore {
   }
 
   async saveProfile(profile: ChildProfile): Promise<ChildProfile> {
-    const record = await readFamily(profile.familyId);
-    const now = new Date().toISOString();
-    // Upsert the single PROFILE item, preserving the original createdAt on update.
-    const saved: ChildProfile = {
-      ...profile,
-      createdAt: record.profile?.createdAt ?? profile.createdAt ?? now,
-      updatedAt: now,
-    };
-    record.profile = saved;
-    await writeFamily(profile.familyId, record);
-    return saved;
+    // All read-modify-write paths lock per family so concurrent writes can't lose data
+    // (e.g. a coach turn's addLearning racing its addEpisode, or two co-parents at once).
+    return withLock(`memory:${profile.familyId}`, async () => {
+      const record = await readFamily(profile.familyId);
+      const now = new Date().toISOString();
+      // Upsert the single PROFILE item, preserving the original createdAt on update.
+      const saved: ChildProfile = {
+        ...profile,
+        createdAt: record.profile?.createdAt ?? profile.createdAt ?? now,
+        updatedAt: now,
+      };
+      record.profile = saved;
+      await writeFamily(profile.familyId, record);
+      return saved;
+    });
   }
 
   async addLearning(input: Omit<Learning, "id" | "createdAt">): Promise<Learning> {
-    const record = await readFamily(input.familyId);
-    const learning: Learning = {
-      ...input,
-      id: randomUUID(),
-      createdAt: new Date().toISOString(),
-    };
-    record.learnings.push(learning); // append as LEARNING#<ts>
-    await writeFamily(input.familyId, record);
-    return learning;
+    return withLock(`memory:${input.familyId}`, async () => {
+      const record = await readFamily(input.familyId);
+      const learning: Learning = {
+        ...input,
+        id: randomUUID(),
+        createdAt: new Date().toISOString(),
+      };
+      record.learnings.push(learning); // append as LEARNING#<ts>
+      await writeFamily(input.familyId, record);
+      return learning;
+    });
   }
 
   async addEpisode(input: Omit<Episode, "id" | "createdAt">): Promise<Episode> {
-    const record = await readFamily(input.familyId);
-    const episode: Episode = {
-      ...input,
-      id: randomUUID(),
-      createdAt: new Date().toISOString(),
-    };
-    record.episodes.push(episode); // append as EPISODE#<ts>
-    await writeFamily(input.familyId, record);
-    return episode;
+    return withLock(`memory:${input.familyId}`, async () => {
+      const record = await readFamily(input.familyId);
+      const episode: Episode = {
+        ...input,
+        id: randomUUID(),
+        createdAt: new Date().toISOString(),
+      };
+      record.episodes.push(episode); // append as EPISODE#<ts>
+      await writeFamily(input.familyId, record);
+      return episode;
+    });
   }
 
   async updateEpisodeOutcome(
@@ -157,13 +166,15 @@ class LocalMemoryStore implements MemoryStore {
     episodeId: string,
     outcome: string,
   ): Promise<void> {
-    const record = await readFamily(familyId);
-    const episode = record.episodes.find((e) => e.id === episodeId);
-    if (!episode) {
-      throw new Error(`Episode ${episodeId} not found for family ${familyId}`);
-    }
-    episode.outcome = outcome;
-    await writeFamily(familyId, record);
+    return withLock(`memory:${familyId}`, async () => {
+      const record = await readFamily(familyId);
+      const episode = record.episodes.find((e) => e.id === episodeId);
+      if (!episode) {
+        throw new Error(`Episode ${episodeId} not found for family ${familyId}`);
+      }
+      episode.outcome = outcome;
+      await writeFamily(familyId, record);
+    });
   }
 
   async deleteFamily(familyId: string): Promise<void> {

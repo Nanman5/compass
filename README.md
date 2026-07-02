@@ -1,6 +1,6 @@
 # Compass
 
-**A parenting companion for the digital age.** Compass gives parents of children aged 2–8
+**A parenting companion for the digital age.** Compass gives parents of children aged 0–8
 personalized, evidence-grounded guidance — one concrete next step at a time — and remembers
 each family so its advice gets sharper the more you use it.
 

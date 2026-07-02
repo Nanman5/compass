@@ -413,15 +413,17 @@ function ResultCard({ result, onReset }: { result: PersonalizeResult; onReset: (
               {step}
             </p>
 
-            {/* When to put the screen away — the product's soul. */}
-            <div className="mt-5 flex items-start gap-2.5 rounded-2xl bg-teal/[0.06] px-4 py-3.5">
-              <span className="mt-0.5 shrink-0 text-teal/70">
-                <ScreenIcon />
-              </span>
-              <p className="text-[0.92rem] leading-relaxed text-teal">
-                <span className="font-bold">When to put the screen away:</span> {screenNote}
-              </p>
-            </div>
+            {/* When to put the screen away — only when screens are actually part of it. */}
+            {screenNote && (
+              <div className="mt-5 flex items-start gap-2.5 rounded-2xl bg-teal/[0.06] px-4 py-3.5">
+                <span className="mt-0.5 shrink-0 text-teal/70">
+                  <ScreenIcon />
+                </span>
+                <p className="text-[0.92rem] leading-relaxed text-teal">
+                  <span className="font-bold">When to put the screen away:</span> {screenNote}
+                </p>
+              </div>
+            )}
           </div>
         </div>
 

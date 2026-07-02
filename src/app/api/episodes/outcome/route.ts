@@ -14,6 +14,7 @@
 
 import { NextResponse } from "next/server";
 
+import { familyAccessError } from "@/lib/authz";
 import { memory } from "@/lib/memory";
 
 export const runtime = "nodejs";
@@ -41,6 +42,9 @@ export async function POST(req: Request): Promise<Response> {
   if (typeof outcome !== "string" || outcome.trim().length === 0) {
     return NextResponse.json({ error: "outcome is required" }, { status: 400 });
   }
+
+  const denied = await familyAccessError(familyId);
+  if (denied) return denied;
 
   try {
     await memory.updateEpisodeOutcome(familyId, episodeId, outcome.trim());

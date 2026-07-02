@@ -13,12 +13,18 @@
 
 import { NextResponse } from "next/server";
 
+import { familyAccessError } from "@/lib/authz";
 import { memory } from "@/lib/memory";
-import type { AgeBand, ChildProfile } from "@/lib/types";
+import {
+  asTrimmed,
+  normalizeAgeBand,
+  normalizeMediaContext,
+  normalizeName,
+  normalizeStringArray,
+} from "@/lib/profilefields";
+import type { ChildProfile } from "@/lib/types";
 
 export const runtime = "nodejs";
-
-const AGE_BANDS: readonly AgeBand[] = ["0-1", "2-3", "4-5", "6-8"];
 
 export async function POST(req: Request): Promise<Response> {
   let body: unknown;
@@ -33,6 +39,9 @@ export async function POST(req: Request): Promise<Response> {
   if (familyId.length === 0) {
     return NextResponse.json({ error: "familyId is required" }, { status: 400 });
   }
+
+  const denied = await familyAccessError(familyId);
+  if (denied) return denied;
 
   const now = new Date().toISOString();
   const familyStructure = asTrimmed(b.familyStructure);
@@ -61,43 +70,4 @@ export async function POST(req: Request): Promise<Response> {
     console.error("[profile] save failed:", err);
     return NextResponse.json({ error: "Failed to save profile" }, { status: 500 });
   }
-}
-
-function asTrimmed(value: unknown): string {
-  return typeof value === "string" ? value.trim() : "";
-}
-
-function normalizeMediaContext(value: unknown): ChildProfile["mediaContext"] | null {
-  if (!value || typeof value !== "object") return null;
-  const v = value as Record<string, unknown>;
-  const out: NonNullable<ChildProfile["mediaContext"]> = {};
-  const crowdsOut = asTrimmed(v.crowdsOut);
-  const calmUse = asTrimmed(v.calmUse);
-  const mediation = asTrimmed(v.mediation);
-  if (crowdsOut) out.crowdsOut = crowdsOut;
-  if (calmUse) out.calmUse = calmUse;
-  if (mediation) out.mediation = mediation;
-  return Object.keys(out).length > 0 ? out : null;
-}
-
-function normalizeName(value: unknown): string {
-  if (typeof value !== "string" || value.trim().length === 0) return "their child";
-  // First token only — COPPA defense-in-depth.
-  return value.trim().split(/\s+/)[0];
-}
-
-function normalizeAgeBand(value: unknown): AgeBand {
-  if (typeof value === "string" && (AGE_BANDS as readonly string[]).includes(value)) {
-    return value as AgeBand;
-  }
-  return "2-3";
-}
-
-function normalizeStringArray(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  return value
-    .filter((v): v is string => typeof v === "string")
-    .map((v) => v.trim())
-    .filter((v) => v.length > 0)
-    .slice(0, 8);
 }

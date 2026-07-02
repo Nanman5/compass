@@ -21,7 +21,7 @@ import { forwardRef, useCallback, useEffect, useRef, useState } from "react";
 
 import { CompassStar } from "@/components/CompassStar";
 import { Icon } from "@/components/Icon";
-import type { CoachTurnResult } from "@/lib/types";
+import type { CoachTurnResult, TrajectoryStep } from "@/lib/types";
 
 /** Full-color Compass mark — same asset the onboarding presence uses. */
 const MARK_COLOR = "/brand/compass-mark-color.png";
@@ -59,11 +59,48 @@ const PROMPTS = [
 
 type Phase = "idle" | "thinking" | "result" | "error";
 
+/** Warm labels for each agent action, so the live feed reads human, not technical. */
+const TOOL_LABELS: Record<string, string> = {
+  get_family_profile: "Reading what Compass knows about your child",
+  retrieve_evidence: "Checking trusted guidance",
+  find_studies: "Searching peer-reviewed research",
+  record_learning: "Remembering something new about your family",
+  log_interaction: "Saving this moment",
+};
+
+/** One row in the live "agent at work" feed. */
+interface LiveStep {
+  label: string;
+  summary?: string;
+  done: boolean;
+}
+
+/** Fold a streamed trajectory step into the live feed. */
+function applyStep(steps: LiveStep[], step: TrajectoryStep): LiveStep[] {
+  if (step.kind === "tool_call") {
+    return [...steps, { label: TOOL_LABELS[step.tool ?? ""] ?? "Working on it", done: false }];
+  }
+  if (step.kind === "tool_result") {
+    // Complete the most recent still-running row (calls and results arrive in order).
+    const idx = steps.map((s) => s.done).lastIndexOf(false);
+    if (idx === -1) return steps;
+    const next = steps.slice();
+    next[idx] = { ...next[idx], done: true, summary: step.summary };
+    return next;
+  }
+  if (step.kind === "final") {
+    return [...steps.map((s) => ({ ...s, done: true })), { label: "Writing your answer", done: true }];
+  }
+  return steps; // "thinking" markers stay internal
+}
+
 export default function CoachExperience() {
   const [input, setInput] = useState("");
   const [phase, setPhase] = useState<Phase>("idle");
   const [result, setResult] = useState<CoachTurnResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** The agent's actions, streamed live while it works. */
+  const [liveSteps, setLiveSteps] = useState<LiveStep[]>([]);
   /** The situation the current result answers — shown above the step for context. */
   const [askedAbout, setAskedAbout] = useState("");
 
@@ -114,6 +151,7 @@ export default function CoachExperience() {
     setAskedAbout(message);
     setError(null);
     setResult(null);
+    setLiveSteps([]);
     setPhase("thinking");
 
     try {
@@ -125,10 +163,37 @@ export default function CoachExperience() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ familyId: familyId.current, message }),
       });
-      const data = (await res.json()) as CoachTurnResult & { error?: string };
-      if (!res.ok) throw new Error(data.error || "Coach turn failed");
-      setResult(data);
+      if (!res.ok || !res.body) {
+        const data = (await res.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(data?.error || "Coach turn failed");
+      }
+
+      // The route streams NDJSON: live trajectory steps as the agent works, then the result.
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let final: CoachTurnResult | null = null;
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? ""; // keep the trailing partial line
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          const event = JSON.parse(line) as
+            | { type: "step"; step: TrajectoryStep }
+            | { type: "result"; result: CoachTurnResult }
+            | { type: "error"; error: string };
+          if (event.type === "step") setLiveSteps((prev) => applyStep(prev, event.step));
+          else if (event.type === "result") final = event.result;
+          else throw new Error(event.error || "Coach turn failed");
+        }
+      }
+      if (!final) throw new Error("Coach turn failed");
+      setResult(final);
       setPhase("result");
+      setInput("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn't reach Compass");
       setPhase("error");
@@ -139,6 +204,7 @@ export default function CoachExperience() {
     setResult(null);
     setError(null);
     setAskedAbout("");
+    setLiveSteps([]);
     setPhase("idle");
     setInput("");
     // Return focus to the composer so the parent can ask the next thing immediately.
@@ -152,7 +218,8 @@ export default function CoachExperience() {
     }
   };
 
-  const showComposer = phase === "idle" || phase === "thinking";
+  const isChatReply = phase === "result" && result?.kind === "chat";
+  const showComposer = phase === "idle" || phase === "thinking" || isChatReply;
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-cream">
@@ -195,7 +262,7 @@ export default function CoachExperience() {
             Compass
           </span>
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-coral">
-            {phase === "thinking" ? "Thinking it through…" : "Your one next step"}
+            {phase === "thinking" ? "Working on it…" : isChatReply ? "Here with you" : "Your one next step"}
           </p>
         </header>
 
@@ -211,13 +278,17 @@ export default function CoachExperience() {
               />
             )}
 
-            {phase === "thinking" && <Thinking situation={askedAbout} />}
+            {phase === "thinking" && <Thinking situation={askedAbout} steps={liveSteps} />}
 
             {phase === "error" && (
               <ErrorCard text={error ?? "Something went wrong"} onRetry={() => void ask()} />
             )}
 
-            {phase === "result" && result && (
+            {phase === "result" && result && result.kind === "chat" && (
+              <ChatReplyView reply={result.reply ?? ""} situation={askedAbout} />
+            )}
+
+            {phase === "result" && result && result.kind !== "chat" && (
               <ResultView result={result} situation={askedAbout} onAskAnother={reset} />
             )}
           </div>
@@ -277,39 +348,79 @@ function Intro({ onPick }: { onPick: (prompt: string) => void }) {
 
 /* ───────────────────────────────────────── thinking state */
 
-function Thinking({ situation }: { situation: string }) {
-  /** Cycle warm status lines so the wait feels alive, not stuck. */
-  const lines = [
-    "Reading what you shared…",
-    "Looking up what Compass knows about your child…",
-    "Weighing trusted guidance…",
-    "Shaping one step that fits today…",
-  ];
-  const [i, setI] = useState(0);
-  useEffect(() => {
-    const t = setInterval(() => setI((n) => (n + 1) % lines.length), 1800);
-    return () => clearInterval(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
+function Thinking({ situation, steps }: { situation: string; steps: LiveStep[] }) {
   return (
     <div className="msg-in pt-2">
       {situation && <SituationChip situation={situation} />}
-      <div className="glass mt-4 flex items-center gap-4 rounded-3xl p-6">
-        <span className="compass-thinking shrink-0">
-          <CompassStar size={34} className="tool-spin" />
-        </span>
-        <div className="min-w-0">
-          <p className="text-[1.02rem] font-semibold text-teal">{lines[i]}</p>
-          <div className="mt-2 flex items-center gap-1.5">
-            {[0, 1, 2].map((d) => (
-              <span
-                key={d}
-                className="dot h-1.5 w-1.5 rounded-full bg-teal/50"
-                style={{ animationDelay: `${d * 0.16}s` }}
-              />
-            ))}
+      <div className="glass mt-4 rounded-3xl p-6">
+        <div className="flex items-center gap-4">
+          <span className="compass-thinking shrink-0">
+            <CompassStar size={34} className="tool-spin" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-[1.02rem] font-semibold text-teal">
+              {steps.length === 0 ? "Reading what you shared…" : "Working through it with you"}
+            </p>
+            <div className="mt-2 flex items-center gap-1.5">
+              {[0, 1, 2].map((d) => (
+                <span
+                  key={d}
+                  className="dot h-1.5 w-1.5 rounded-full bg-teal/50"
+                  style={{ animationDelay: `${d * 0.16}s` }}
+                />
+              ))}
+            </div>
           </div>
+        </div>
+
+        {/* the agent's real actions, appearing live as it works */}
+        {steps.length > 0 && (
+          <ol className="mt-5 space-y-3 border-t border-teal/10 pt-4" aria-live="polite">
+            {steps.map((step, idx) => (
+              <li key={idx} className="msg-in flex items-start gap-3">
+                <span
+                  className={`mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full ${
+                    step.done ? "bg-sage-soft/50 text-teal" : "bg-coral/10 text-coral"
+                  }`}
+                >
+                  {step.done ? (
+                    <Icon name="check" size={13} />
+                  ) : (
+                    <CompassStar size={13} className="tool-spin" />
+                  )}
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-[0.92rem] font-semibold leading-snug text-teal">
+                    {step.label}
+                    {!step.done && "…"}
+                  </span>
+                  {step.summary && (
+                    <span className="block text-[0.8rem] leading-relaxed text-muted">{step.summary}</span>
+                  )}
+                </span>
+              </li>
+            ))}
+          </ol>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ───────────────────────────────────────── conversational reply (kind: "chat") */
+
+/** A plain, warm reply — greetings and clarifying questions render as chat, not as a
+ *  coached "next step" card, so saying "hey" never produces manufactured advice UI. */
+function ChatReplyView({ reply, situation }: { reply: string; situation: string }) {
+  return (
+    <div className="msg-in space-y-4 pt-2">
+      {situation && <SituationChip situation={situation} />}
+      <div className="flex items-start gap-3">
+        <span className="mt-1 shrink-0">
+          <CompassStar size={26} />
+        </span>
+        <div className="glass max-w-[88%] rounded-3xl rounded-tl-md px-5 py-4">
+          <p className="text-[1.02rem] leading-relaxed text-ink/90">{reply}</p>
         </div>
       </div>
     </div>
