@@ -33,7 +33,7 @@ interface PersonalizeResult {
   screenNote: string;
   supported: boolean;
   caution?: string;
-  citations: { title: string; source: string; summary?: string }[];
+  citations: { title: string; source: string; url?: string; summary?: string }[];
   sourceLabel?: string;
 }
 
@@ -450,7 +450,18 @@ function ResultCard({ result, onReset }: { result: PersonalizeResult; onReset: (
                 <li key={c.title} className="group relative flex items-start gap-2 text-[0.86rem] leading-snug">
                   <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-coral" />
                   <span>
-                    <span className="font-semibold text-ink">{c.title}</span>
+                    {c.url ? (
+                      <a
+                        href={c.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-semibold text-teal underline decoration-teal/30 underline-offset-2 transition hover:decoration-teal"
+                      >
+                        {c.title}
+                      </a>
+                    ) : (
+                      <span className="font-semibold text-ink">{c.title}</span>
+                    )}
                     <span className="text-muted"> — {c.source}</span>
                   </span>
                   {c.summary && (

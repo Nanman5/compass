@@ -421,6 +421,7 @@ async function executeTool(call: ToolCall, ctx: ToolContext): Promise<ToolOutcom
           ctx.evidenceCitations.push({
             title: s.title,
             source: s.source,
+            ...(s.url ? { url: s.url } : {}),
             summary: truncate(s.text, 220),
           });
         }

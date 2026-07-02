@@ -52,7 +52,7 @@ interface PersonalizeResult {
   screenNote: string;
   supported: boolean;
   caution?: string;
-  citations: { title: string; source: string; summary?: string }[];
+  citations: { title: string; source: string; url?: string; summary?: string }[];
 }
 
 /** Always-usable fallback so the parent never hits a dead end if the model misbehaves. */
@@ -272,10 +272,10 @@ function parseResult(text: string, snippets: EvidenceSnippet[]): PersonalizeResu
 function validateCitations(
   value: unknown,
   snippets: EvidenceSnippet[],
-): { title: string; source: string; summary?: string }[] {
+): { title: string; source: string; url?: string; summary?: string }[] {
   if (!Array.isArray(value)) return [];
   const byTitle = new Map(snippets.map((s) => [s.title.toLowerCase(), s]));
-  const out: { title: string; source: string; summary?: string }[] = [];
+  const out: { title: string; source: string; url?: string; summary?: string }[] = [];
   for (const item of value) {
     if (!item || typeof item !== "object") continue;
     const title = asString((item as Record<string, unknown>).title);
@@ -286,6 +286,7 @@ function validateCitations(
       out.push({
         title: match.title,
         source: match.source,
+        ...(match.url ? { url: match.url } : {}),
         summary: gist.length > 220 ? `${gist.slice(0, 219)}…` : gist,
       });
     }

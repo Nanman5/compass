@@ -152,6 +152,8 @@ export interface EvidenceSnippet {
   source: string; // e.g. "AAP 2026 screen-time guidance"
   text: string;
   tags: string[]; // for simple keyword retrieval, e.g. ["screen-time","bedtime"]
+  /** Link to the source guidance (verified live) so citations can point somewhere real. */
+  url?: string;
 }
 
 export interface EvidenceIndex {
