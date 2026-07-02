@@ -44,4 +44,17 @@ describe("budgetExceededError", () => {
     expect((await budgetExceededError("famA", 0.05))!.status).toBe(402);
     expect(await budgetExceededError("famB", 0.01)).toBeNull();
   });
+
+  it("renews at midnight UTC: yesterday's spend doesn't count today", async () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date("2026-07-02T23:50:00Z"));
+      const { budgetExceededError } = await import("@/lib/budget");
+      expect((await budgetExceededError("famA", 0.05))!.status).toBe(402); // today: blown
+      vi.setSystemTime(new Date("2026-07-03T00:10:00Z")); // …twenty minutes later
+      expect(await budgetExceededError("famA", 0.01)).toBeNull(); // fresh daily budget
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

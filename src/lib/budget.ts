@@ -1,14 +1,16 @@
 /**
- * Compass — hard per-family spend cap (the project is submitted; keep the demo alive
- * for pennies, never more).
+ * Compass — hard per-family DAILY spend cap (the project is submitted; keep the demo
+ * alive for pennies, never more).
  *
  * Google offers no per-user billing limits, so we meter in-app: every route that reaches
- * an LLM pre-charges a conservative USD estimate against its family's ledger BEFORE doing
- * the work. Once a family/device has spent the cap (default $0.30, override with
- * FAMILY_BUDGET_USD), those routes return a warm "demo budget used up" note instead of
- * burning more. Free work (memory reads, Europe PMC, cached weekly drops) is never charged.
+ * an LLM pre-charges a conservative USD estimate against its family's ledger for TODAY
+ * (UTC) before doing the work. Once a family/device has spent the daily cap (default
+ * $0.30/day, override with FAMILY_BUDGET_USD), those routes return a warm "come back
+ * tomorrow" note instead of burning more; at midnight UTC the budget renews itself.
+ * Free work (memory reads, Europe PMC, cached weekly drops) is never charged.
  *
- * Backend mirrors the other stores: local JSON (dev) / Firestore `budgets/{familyId}` (prod).
+ * Backend mirrors the other stores: local JSON (dev) / Firestore (prod), one ledger
+ * entry per family per day: `budgets/{familyId}_{YYYY-MM-DD}`.
  */
 
 import "server-only";
@@ -21,8 +23,13 @@ import { NextResponse } from "next/server";
 
 import { withLock } from "@/lib/locks";
 
-/** Lifetime cap per familyId, in USD. */
+/** Daily cap per familyId, in USD. */
 const CAP_USD = Number(process.env.FAMILY_BUDGET_USD ?? "0.30");
+
+/** Today's ledger bucket, e.g. "2026-07-02" (UTC so it can't be gamed by clock zones). */
+function dayKey(): string {
+  return new Date().toISOString().slice(0, 10);
+}
 
 /** Conservative (over-)estimates per operation, in USD. */
 export const COST = {
@@ -34,9 +41,9 @@ export const COST = {
   grounding: 0.005, // one Gemini + Google Search lookup
 } as const;
 
-/** What the parent sees when the demo budget is spent. */
+/** What the parent sees when today's demo budget is spent. */
 const BUDGET_MESSAGE =
-  "This demo has reached its little budget for your device — thank you so much for trying Compass!";
+  "This demo has reached its little budget for your device today — come back tomorrow, and thanks for trying Compass!";
 
 /* ─────────────────────────────── local JSON ledger */
 
@@ -54,8 +61,14 @@ async function localAddAndGet(familyId: string, usd: number): Promise<number> {
     } catch {
       /* first spend */
     }
-    const spent = (ledger[familyId] ?? 0) + usd;
-    ledger[familyId] = spent;
+    const today = dayKey();
+    const key = `${familyId}:${today}`;
+    const spent = (ledger[key] ?? 0) + usd;
+    ledger[key] = spent;
+    // Yesterday's buckets are dead weight — drop them so the file never grows.
+    for (const k of Object.keys(ledger)) {
+      if (!k.endsWith(`:${today}`)) delete ledger[k];
+    }
     await mkdir(path.dirname(ledgerFile()), { recursive: true });
     await writeFile(ledgerFile(), JSON.stringify(ledger, null, 2), "utf8");
     return spent;
@@ -72,7 +85,8 @@ function budgetDocId(familyId: string): string {
 
 async function firestoreAddAndGet(familyId: string, usd: number): Promise<number> {
   firestore ??= new Firestore();
-  const ref = firestore.collection("budgets").doc(budgetDocId(familyId));
+  // One doc per family per day — the increment stays atomic and midnight is a fresh doc.
+  const ref = firestore.collection("budgets").doc(`${budgetDocId(familyId)}_${dayKey()}`);
   await ref.set({ spent: FieldValue.increment(usd) }, { merge: true });
   const snap = await ref.get();
   const spent = snap.get("spent");
@@ -97,7 +111,7 @@ export async function budgetExceededError(familyId: string, usd: number): Promis
   try {
     const spent = await addAndGet(familyId, usd);
     if (spent > CAP_USD) {
-      console.warn(`[budget] family ${familyId} over cap ($${spent.toFixed(3)} > $${CAP_USD})`);
+      console.warn(`[budget] family ${familyId} over today's cap ($${spent.toFixed(3)} > $${CAP_USD})`);
       return NextResponse.json({ error: BUDGET_MESSAGE, budgetExceeded: true }, { status: 402 });
     }
     return null;
