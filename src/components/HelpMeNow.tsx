@@ -246,22 +246,14 @@ export default function HelpMeNow({ familyId, onClose }: { familyId: string; onC
         if (!tokenRes.ok) throw new Error(token.error || "Could not start voice");
         if (cancelled) return;
 
-        // ── Fallback transport: Gemini Live (no OpenAI available server-side) ──
-        if (token.provider === "gemini") {
-          const mic = await navigator.mediaDevices.getUserMedia({
-            audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-          });
-          if (cancelled) {
-            mic.getTracks().forEach((t) => t.stop());
-            return;
-          }
-          micRef.current = mic;
-          hlog("connecting via gemini live fallback:", token.model);
+        // ── Gemini Live transport (fallback when OpenAI is unavailable or rejects) ──
+        const startGemini = (tok: typeof token, mic: MediaStream) => {
+          hlog("connecting via gemini live fallback:", tok.model);
           liveRef.current = connectGeminiLive({
-            token: token.value,
-            model: token.model,
-            instructions: token.instructions ?? "",
-            tools: token.tools ?? [],
+            token: tok.value,
+            model: tok.model,
+            instructions: tok.instructions ?? "",
+            tools: tok.tools ?? [],
             mic,
             onOpen: () => {
               if (!cancelled) setStatus("live");
@@ -276,6 +268,18 @@ export default function HelpMeNow({ familyId, onClose }: { familyId: string; onC
               setStatus("error");
             },
           });
+        };
+
+        if (token.provider === "gemini") {
+          const mic = await navigator.mediaDevices.getUserMedia({
+            audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+          });
+          if (cancelled) {
+            mic.getTracks().forEach((t) => t.stop());
+            return;
+          }
+          micRef.current = mic;
+          startGemini(token, mic);
           return;
         }
 
@@ -316,7 +320,25 @@ export default function HelpMeNow({ familyId, onClose }: { familyId: string; onC
           body: offer.sdp,
           headers: { Authorization: `Bearer ${token.value}`, "Content-Type": "application/sdp" },
         });
-        if (!sdpRes.ok) throw new Error(`Voice handshake failed (${sdpRes.status})`);
+        if (!sdpRes.ok) {
+          // OpenAI minted a token but rejected the call (e.g. 429 quota) — switch to Gemini.
+          hlog(`openai handshake failed (${sdpRes.status}) → trying gemini live fallback`);
+          pc.close();
+          pcRef.current = null;
+          dcRef.current = null;
+          const fbRes = await fetch("/api/realtime/session", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ mode: "helpnow", familyId, provider: "gemini" }),
+          });
+          const fb = await fbRes.json();
+          if (cancelled) return;
+          if (!fbRes.ok || fb.provider !== "gemini") {
+            throw new Error(`Voice handshake failed (${sdpRes.status})`);
+          }
+          startGemini(fb, mic);
+          return;
+        }
         const answer = { type: "answer" as const, sdp: await sdpRes.text() };
         if (cancelled) return;
         await pc.setRemoteDescription(answer);

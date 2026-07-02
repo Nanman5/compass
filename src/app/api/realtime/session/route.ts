@@ -127,11 +127,15 @@ const INPUT_AUDIO = {
 export async function POST(req: Request): Promise<Response> {
   let mode: "onboarding" | "helpnow" | "story" = "onboarding";
   let familyId = "";
+  let forceGemini = false;
   try {
-    const body = (await req.json()) as { mode?: string; familyId?: string };
+    const body = (await req.json()) as { mode?: string; familyId?: string; provider?: string };
     if (body?.mode === "helpnow") mode = "helpnow";
     else if (body?.mode === "story") mode = "story";
     if (typeof body?.familyId === "string") familyId = body.familyId.trim();
+    // The client asks for gemini directly after an OpenAI WebRTC handshake failure
+    // (e.g. 429 quota) — the mint can succeed while the actual call is rejected.
+    forceGemini = body?.provider === "gemini";
   } catch {
     /* no body → onboarding defaults */
   }
@@ -161,7 +165,7 @@ export async function POST(req: Request): Promise<Response> {
   // Primary: OpenAI Realtime (WebRTC). Fallback: Gemini Live (gemini-3.1-flash-live-preview)
   // when no OpenAI key is configured or the mint fails, so voice keeps working.
   const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
+  if (!apiKey || forceGemini) {
     return mintGeminiLiveSession(instructions, tools);
   }
   try {
