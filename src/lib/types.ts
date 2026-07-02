@@ -241,11 +241,29 @@ export interface TrajectoryStep {
   summary: string;
 }
 
+/** One prior turn of the on-screen conversation, replayed for context. */
+export interface CoachHistoryTurn {
+  role: "parent" | "compass";
+  text: string;
+}
+
 export interface CoachTurnInput {
   familyId: string;
   message: string;
+  /** Recent visible conversation (oldest first) so follow-ups keep their context. */
+  history?: CoachHistoryTurn[];
   /** Live observer — called as each trajectory step happens (powers the streaming UI). */
   onStep?: (step: TrajectoryStep) => void;
+}
+
+/** One evidence citation, enriched so the UI can link out and preview it. */
+export interface Citation {
+  title: string;
+  source: string;
+  /** Link to the study/guidance when we have one (live research results do). */
+  url?: string;
+  /** One-to-two-sentence gist, shown as a hover preview. */
+  summary?: string;
 }
 
 export interface CoachTurnResult {
@@ -259,7 +277,7 @@ export interface CoachTurnResult {
   /** The "when to put the screen away" note — Compass's soul. */
   screenNote: string;
   /** Evidence citations used. */
-  citations: { title: string; source: string }[];
+  citations: Citation[];
   /** New learnings written to this family's memory this turn. */
   learnings: string[];
   /** Full agent trajectory for observability / the demo's behind-the-scenes panel. */

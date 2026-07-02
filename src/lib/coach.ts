@@ -32,6 +32,7 @@ import { searchResearch } from "@/lib/research";
 import { studies } from "@/lib/studies";
 import type {
   ChatMessage,
+  Citation,
   CoachTurnInput,
   CoachTurnResult,
   EvidenceSnippet,
@@ -181,7 +182,7 @@ Use citations from the evidence you actually retrieved. If you retrieved none, u
 /* ───────────────────────────────────────── the tool-loop */
 
 export async function runCoachTurn(input: CoachTurnInput): Promise<CoachTurnResult> {
-  const { familyId, message, onStep } = input;
+  const { familyId, message, history, onStep } = input;
   if (typeof familyId !== "string" || familyId.trim().length === 0) {
     throw new Error("runCoachTurn: familyId is required");
   }
@@ -203,12 +204,21 @@ export async function runCoachTurn(input: CoachTurnInput): Promise<CoachTurnResu
     }
   };
   const learnings: string[] = [];
-  const citations: { title: string; source: string }[] = [];
+  const citations: Citation[] = [];
   let toolResultBudget = MAX_TOOL_RESULT_CHARS;
   let loggedInteraction = false;
 
   const system = buildSystemPrompt();
-  const messages: ChatMessage[] = [{ role: "user", content: message }];
+  // Replay the recent visible conversation so a follow-up ("he's 3") keeps its context.
+  const messages: ChatMessage[] = [
+    ...(history ?? []).slice(-8).map(
+      (h): ChatMessage => ({
+        role: h.role === "parent" ? "user" : "assistant",
+        content: h.text.slice(0, 2_000),
+      }),
+    ),
+    { role: "user", content: message },
+  ];
 
   let steps = 0;
   let finalParsed: ParsedFinal | null = null;
@@ -359,7 +369,7 @@ export async function runCoachTurn(input: CoachTurnInput): Promise<CoachTurnResu
 
 interface ToolContext {
   familyId: string;
-  evidenceCitations: { title: string; source: string }[];
+  evidenceCitations: Citation[];
   learnings: string[];
   markLogged: () => void;
   message: string;
@@ -408,7 +418,11 @@ async function executeTool(call: ToolCall, ctx: ToolContext): Promise<ToolOutcom
       // Track citations centrally so the final result carries them even if the model omits.
       for (const s of snippets) {
         if (!ctx.evidenceCitations.some((c) => c.title === s.title)) {
-          ctx.evidenceCitations.push({ title: s.title, source: s.source });
+          ctx.evidenceCitations.push({
+            title: s.title,
+            source: s.source,
+            summary: truncate(s.text, 220),
+          });
         }
       }
       return {
@@ -439,9 +453,19 @@ async function executeTool(call: ToolCall, ctx: ToolContext): Promise<ToolOutcom
         })),
       };
       // Carry research citations so the final answer can reference them.
+      for (const c of curated) {
+        if (!ctx.evidenceCitations.some((x) => x.title === c.title)) {
+          ctx.evidenceCitations.push({ title: c.title, source: c.authors, summary: truncate(c.takeaway, 220) });
+        }
+      }
       for (const r of live) {
         if (r.url && !ctx.evidenceCitations.some((c) => c.title === r.title)) {
-          ctx.evidenceCitations.push({ title: r.title, source: `${r.journal} ${r.year}`.trim() });
+          ctx.evidenceCitations.push({
+            title: r.title,
+            source: `${r.journal} ${r.year}`.trim(),
+            url: r.url,
+            summary: truncate(r.abstract ?? "", 220) || undefined,
+          });
         }
       }
       return {

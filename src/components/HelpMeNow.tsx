@@ -43,7 +43,7 @@ interface CalmTimer {
   remaining: number;
 }
 
-export default function HelpMeNow({ familyId }: { familyId: string }) {
+export default function HelpMeNow({ familyId, onClose }: { familyId: string; onClose?: () => void }) {
   const router = useRouter();
   const [status, setStatus] = useState<Status>("connecting");
   const [caption, setCaption] = useState("");
@@ -83,8 +83,10 @@ export default function HelpMeNow({ familyId }: { familyId: string }) {
 
   const leave = useCallback(() => {
     cleanup();
-    router.push("/app");
-  }, [cleanup, router]);
+    // As an overlay over the Help Now chat, closing returns to the chat; standalone, go home.
+    if (onClose) onClose();
+    else router.push("/app");
+  }, [cleanup, router, onClose]);
 
   /** Some parents don't want to talk out loud in a hard moment — let them switch to the
    *  text coach instead. We tear down the voice session first, then hand off. */

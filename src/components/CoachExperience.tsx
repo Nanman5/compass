@@ -57,7 +57,14 @@ const PROMPTS = [
   "Won't eat anything but the same three foods.",
 ];
 
-type Phase = "idle" | "thinking" | "result" | "error";
+type Phase = "idle" | "thinking" | "error";
+
+/** One completed question→answer pair in the running conversation. */
+interface Exchange {
+  id: number;
+  question: string;
+  result: CoachTurnResult;
+}
 
 /** Warm labels for each agent action, so the live feed reads human, not technical. */
 const TOOL_LABELS: Record<string, string> = {
@@ -97,15 +104,18 @@ function applyStep(steps: LiveStep[], step: TrajectoryStep): LiveStep[] {
 export default function CoachExperience() {
   const [input, setInput] = useState("");
   const [phase, setPhase] = useState<Phase>("idle");
-  const [result, setResult] = useState<CoachTurnResult | null>(null);
+  /** The whole conversation so far — nothing is erased when a new message is sent. */
+  const [exchanges, setExchanges] = useState<Exchange[]>([]);
   const [error, setError] = useState<string | null>(null);
   /** The agent's actions, streamed live while it works. */
   const [liveSteps, setLiveSteps] = useState<LiveStep[]>([]);
-  /** The situation the current result answers — shown above the step for context. */
+  /** The situation currently being worked on (shown while thinking / on error). */
   const [askedAbout, setAskedAbout] = useState("");
 
   const familyId = useRef<string>("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const scrollRef = useRef<HTMLElement>(null);
+  const nextExchangeId = useRef(1);
 
   // Lock the document to a full-height, non-scrolling shell while mounted (the result
   // pane scrolls itself). Mirrors OnboardingChat so Safari resolves h-full and the
@@ -136,6 +146,12 @@ export default function CoachExperience() {
     };
   }, []);
 
+  // Keep the newest message in view as the conversation grows / steps stream in.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+  }, [exchanges, liveSteps, phase]);
+
   // Grow the textarea with its content, up to the CSS max-height.
   useEffect(() => {
     const el = textareaRef.current;
@@ -150,18 +166,27 @@ export default function CoachExperience() {
 
     setAskedAbout(message);
     setError(null);
-    setResult(null);
     setLiveSteps([]);
     setPhase("thinking");
+    setInput("");
 
     try {
       // The scope may not have resolved yet on a very fast submit — make sure of it.
       if (!familyId.current) familyId.current = await resolveFamilyId();
 
+      // Send the visible conversation so follow-ups keep their context server-side.
+      const history = exchanges.slice(-4).flatMap((ex) => [
+        { role: "parent" as const, text: ex.question },
+        {
+          role: "compass" as const,
+          text: ex.result.kind === "chat" ? (ex.result.reply ?? "") : ex.result.nextStep,
+        },
+      ]);
+
       const res = await fetch("/api/coach", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ familyId: familyId.current, message }),
+        body: JSON.stringify({ familyId: familyId.current, message, history }),
       });
       if (!res.ok || !res.body) {
         const data = (await res.json().catch(() => null)) as { error?: string } | null;
@@ -191,25 +216,18 @@ export default function CoachExperience() {
         }
       }
       if (!final) throw new Error("Coach turn failed");
-      setResult(final);
-      setPhase("result");
-      setInput("");
+      setExchanges((prev) => [...prev, { id: nextExchangeId.current++, question: message, result: final }]);
+      setLiveSteps([]);
+      setAskedAbout("");
+      setPhase("idle");
+      // Return focus so the parent can keep the conversation going.
+      requestAnimationFrame(() => textareaRef.current?.focus());
     } catch (err) {
+      setInput(message); // give them their words back to retry
       setError(err instanceof Error ? err.message : "Couldn't reach Compass");
       setPhase("error");
     }
-  }, [input, phase]);
-
-  const reset = useCallback(() => {
-    setResult(null);
-    setError(null);
-    setAskedAbout("");
-    setLiveSteps([]);
-    setPhase("idle");
-    setInput("");
-    // Return focus to the composer so the parent can ask the next thing immediately.
-    requestAnimationFrame(() => textareaRef.current?.focus());
-  }, []);
+  }, [input, phase, exchanges]);
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
@@ -218,8 +236,13 @@ export default function CoachExperience() {
     }
   };
 
-  const isChatReply = phase === "result" && result?.kind === "chat";
-  const showComposer = phase === "idle" || phase === "thinking" || isChatReply;
+  const lastResult = exchanges[exchanges.length - 1]?.result;
+  const eyebrow =
+    phase === "thinking"
+      ? "Working on it…"
+      : lastResult?.kind === "chat"
+        ? "Here with you"
+        : "Your one next step";
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-cream">
@@ -245,7 +268,7 @@ export default function CoachExperience() {
       <div className="relative z-10 flex h-full w-full flex-col">
         {/* presence header */}
         <header className="mx-auto flex w-full max-w-2xl shrink-0 flex-col items-center gap-1.5 px-4 pb-5 pt-8 text-center sm:px-6">
-          <div className={phase === "result" ? "" : "compass-breathe"}>
+          <div className={phase === "thinking" ? "compass-breathe" : ""}>
             <Image
               src={MARK_COLOR}
               alt="Compass"
@@ -261,15 +284,13 @@ export default function CoachExperience() {
           >
             Compass
           </span>
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-coral">
-            {phase === "thinking" ? "Working on it…" : isChatReply ? "Here with you" : "Your one next step"}
-          </p>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-coral">{eyebrow}</p>
         </header>
 
-        {/* scrolling body */}
-        <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain scroll-smooth">
-          <div className="mx-auto w-full max-w-2xl px-4 pb-10 sm:px-6">
-            {phase === "idle" && (
+        {/* scrolling body — the whole conversation, oldest first */}
+        <main ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain scroll-smooth">
+          <div className="mx-auto w-full max-w-2xl space-y-8 px-4 pb-10 sm:px-6">
+            {exchanges.length === 0 && phase === "idle" && (
               <Intro
                 onPick={(p) => {
                   setInput(p);
@@ -278,35 +299,33 @@ export default function CoachExperience() {
               />
             )}
 
+            {exchanges.map((ex) =>
+              ex.result.kind === "chat" ? (
+                <ChatReplyView key={ex.id} reply={ex.result.reply ?? ""} situation={ex.question} />
+              ) : (
+                <ResultView key={ex.id} result={ex.result} situation={ex.question} />
+              ),
+            )}
+
             {phase === "thinking" && <Thinking situation={askedAbout} steps={liveSteps} />}
 
             {phase === "error" && (
               <ErrorCard text={error ?? "Something went wrong"} onRetry={() => void ask()} />
             )}
-
-            {phase === "result" && result && result.kind === "chat" && (
-              <ChatReplyView reply={result.reply ?? ""} situation={askedAbout} />
-            )}
-
-            {phase === "result" && result && result.kind !== "chat" && (
-              <ResultView result={result} situation={askedAbout} onAskAnother={reset} />
-            )}
           </div>
         </main>
 
-        {/* composer (only while asking) */}
-        {showComposer && (
-          <div className="mx-auto w-full max-w-2xl shrink-0 px-4 sm:px-6">
-            <Composer
-              ref={textareaRef}
-              value={input}
-              disabled={phase === "thinking"}
-              onChange={setInput}
-              onKeyDown={onKeyDown}
-              onSend={() => void ask()}
-            />
-          </div>
-        )}
+        {/* composer — always available, the conversation never resets */}
+        <div className="mx-auto w-full max-w-2xl shrink-0 px-4 sm:px-6">
+          <Composer
+            ref={textareaRef}
+            value={input}
+            disabled={phase === "thinking"}
+            onChange={setInput}
+            onKeyDown={onKeyDown}
+            onSend={() => void ask()}
+          />
+        </div>
       </div>
     </div>
   );
@@ -429,15 +448,7 @@ function ChatReplyView({ reply, situation }: { reply: string; situation: string 
 
 /* ───────────────────────────────────────── result */
 
-function ResultView({
-  result,
-  situation,
-  onAskAnother,
-}: {
-  result: CoachTurnResult;
-  situation: string;
-  onAskAnother: () => void;
-}) {
+function ResultView({ result, situation }: { result: CoachTurnResult; situation: string }) {
   return (
     <div className="msg-in space-y-5 pt-2">
       {situation && <SituationChip situation={situation} />}
@@ -455,7 +466,7 @@ function ResultView({
           </span>
           <p className="eyebrow">Your one next step</p>
           <p
-            className="mt-3 max-w-[34ch] text-[1.45rem] font-semibold leading-snug text-teal sm:text-[1.7rem]"
+            className="mt-3 text-[1.1rem] font-medium leading-relaxed text-teal sm:text-[1.18rem]"
             style={{ fontFamily: "var(--font-display)" }}
           >
             {result.nextStep}
@@ -491,17 +502,7 @@ function ResultView({
           </div>
           <ul className="mt-3 space-y-2.5">
             {result.citations.map((c, idx) => (
-              <li key={`${c.title}-${idx}`} className="flex items-start gap-2.5">
-                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-coral" />
-                <span className="min-w-0">
-                  <span className="text-[0.95rem] font-semibold leading-snug text-ink">
-                    {c.title}
-                  </span>
-                  {c.source && (
-                    <span className="block text-[0.82rem] text-muted">{c.source}</span>
-                  )}
-                </span>
-              </li>
+              <CitationItem key={`${c.title}-${idx}`} citation={c} />
             ))}
           </ul>
         </div>
@@ -509,15 +510,58 @@ function ResultView({
 
       {/* behind the scenes — proves it's agentic */}
       <BehindTheScenes result={result} />
-
-      {/* ask another */}
-      <div className="flex justify-center pt-1">
-        <button onClick={onAskAnother} className="btn btn-primary">
-          <Icon name="chat" size={18} className="text-cream" />
-          Ask about something else
-        </button>
-      </div>
     </div>
+  );
+}
+
+/* ───────────────────────────────────────── citations (linked + hover preview) */
+
+/** One source: clickable when we have a link, with a small hover/focus preview card. */
+function CitationItem({ citation: c }: { citation: CoachTurnResult["citations"][number] }) {
+  const title = c.url ? (
+    <a
+      href={c.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-[0.95rem] font-semibold leading-snug text-teal underline decoration-teal/30 underline-offset-2 transition hover:decoration-teal focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal"
+    >
+      {c.title}
+      <svg
+        width="11"
+        height="11"
+        viewBox="0 0 24 24"
+        fill="none"
+        aria-hidden="true"
+        className="ml-1 inline-block -translate-y-px"
+      >
+        <path d="M7 17L17 7M9 7h8v8" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </a>
+  ) : (
+    <span className="text-[0.95rem] font-semibold leading-snug text-ink">{c.title}</span>
+  );
+
+  return (
+    <li className="group relative flex items-start gap-2.5">
+      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-coral" />
+      <span className="min-w-0">
+        {title}
+        {c.source && <span className="block text-[0.82rem] text-muted">{c.source}</span>}
+      </span>
+
+      {/* hover / keyboard-focus preview of what this source says */}
+      {c.summary && (
+        <span
+          role="tooltip"
+          className="pointer-events-none invisible absolute bottom-full left-4 z-20 mb-2 w-[19rem] max-w-[80vw] translate-y-1 rounded-2xl bg-teal p-3.5 text-[0.82rem] leading-relaxed text-cream opacity-0 shadow-[var(--shadow-soft)] transition duration-150 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100"
+        >
+          <span className="mb-1 block text-[0.68rem] font-bold uppercase tracking-[0.1em] text-cream/60">
+            What it says
+          </span>
+          {c.summary}
+        </span>
+      )}
+    </li>
   );
 }
 

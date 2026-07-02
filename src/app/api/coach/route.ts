@@ -30,9 +30,10 @@ export async function POST(req: Request): Promise<Response> {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { familyId, message } = (body ?? {}) as {
+  const { familyId, message, history } = (body ?? {}) as {
     familyId?: unknown;
     message?: unknown;
+    history?: unknown;
   };
 
   if (typeof familyId !== "string" || familyId.trim().length === 0) {
@@ -45,6 +46,17 @@ export async function POST(req: Request): Promise<Response> {
   const denied = await familyAccessError(familyId);
   if (denied) return denied;
 
+  // Narrow the optional conversation context (older turns are dropped server-side too).
+  const turns = (Array.isArray(history) ? history : [])
+    .filter(
+      (t): t is { role: "parent" | "compass"; text: string } =>
+        !!t &&
+        typeof t === "object" &&
+        ((t as { role?: unknown }).role === "parent" || (t as { role?: unknown }).role === "compass") &&
+        typeof (t as { text?: unknown }).text === "string",
+    )
+    .slice(-8);
+
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -53,6 +65,7 @@ export async function POST(req: Request): Promise<Response> {
         const result = await runCoachTurn({
           familyId,
           message,
+          history: turns,
           onStep: (step) => send({ type: "step", step }),
         });
         send({ type: "result", result });

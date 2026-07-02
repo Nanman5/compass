@@ -33,7 +33,7 @@ interface PersonalizeResult {
   screenNote: string;
   supported: boolean;
   caution?: string;
-  citations: { title: string; source: string }[];
+  citations: { title: string; source: string; summary?: string }[];
   sourceLabel?: string;
 }
 
@@ -447,12 +447,23 @@ function ResultCard({ result, onReset }: { result: PersonalizeResult; onReset: (
           {citations.length > 0 ? (
             <ul className="mt-3 space-y-2">
               {citations.map((c) => (
-                <li key={c.title} className="flex items-start gap-2 text-[0.86rem] leading-snug">
+                <li key={c.title} className="group relative flex items-start gap-2 text-[0.86rem] leading-snug">
                   <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-coral" />
                   <span>
                     <span className="font-semibold text-ink">{c.title}</span>
                     <span className="text-muted"> — {c.source}</span>
                   </span>
+                  {c.summary && (
+                    <span
+                      role="tooltip"
+                      className="pointer-events-none invisible absolute bottom-full left-4 z-20 mb-2 w-[19rem] max-w-[80vw] translate-y-1 rounded-2xl bg-teal p-3.5 text-[0.82rem] leading-relaxed text-cream opacity-0 shadow-[var(--shadow-soft)] transition duration-150 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100"
+                    >
+                      <span className="mb-1 block text-[0.68rem] font-bold uppercase tracking-[0.1em] text-cream/60">
+                        What it says
+                      </span>
+                      {c.summary}
+                    </span>
+                  )}
                 </li>
               ))}
             </ul>
